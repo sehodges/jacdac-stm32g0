@@ -14,12 +14,11 @@ include toolkit/halsrc.mk
 C_SRC += $(wildcard src/*.c) 
 C_SRC += $(HALSRC)
 C_SRC += $(DRV)/BSP/STM32G0xx_Nucleo_32/stm32g0xx_nucleo_32.c
-C_SRC += $(TEMPLATE)/Src/system_stm32g0xx.c
-AS_SRC = $(TEMPLATE)/SW4STM32/startup_stm32g031xx.s
+C_SRC += toolkit/system_stm32g0xx.c
+AS_SRC = toolkit/startup_stm32g031xx.s
 
 V = @
 
-#LD_SCRIPT = $(wildcard $(TEMPLATE)/SW4STM32/Templates/*.ld)
 LD_SCRIPT = toolkit/STM32G031K8Tx_FLASH.ld
 OBJ = $(addprefix $(BUILT)/,$(C_SRC:.c=.o) $(AS_SRC:.s=.o))
 
