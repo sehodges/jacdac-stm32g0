@@ -13,7 +13,6 @@ TEMPLATE = $(CUBE)/Projects/NUCLEO-G031K8/Templates
 include toolkit/halsrc.mk
 C_SRC += $(wildcard src/*.c) 
 C_SRC += $(HALSRC)
-C_SRC += $(DRV)/BSP/STM32G0xx_Nucleo_32/stm32g0xx_nucleo_32.c
 C_SRC += toolkit/system_stm32g0xx.c
 AS_SRC = toolkit/startup_stm32g031xx.s
 
