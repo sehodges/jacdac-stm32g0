@@ -3,10 +3,12 @@ CC = $(PREFIX)gcc
 AS = $(PREFIX)as
 CUBE = STM32CubeG0
 DRV = $(CUBE)/Drivers
-DEFINES = -DUSE_HAL_DRIVER -DSTM32G031xx -DUSE_FULL_ASSERT
+DEFINES = -DUSE_HAL_DRIVER -DSTM32G031xx -DUSE_FULL_ASSERT -DUSE_FULL_LL_DRIVER
+WARNFLAGS = -Wall -Werror
 CFLAGS = $(DEFINES) \
 	-mcpu=cortex-m0plus -mthumb -mfloat-abi=soft  \
-	-Os -g3 -Wall -ffunction-sections
+	-Os -g3 -Wall -ffunction-sections \
+	$(WARNFLAGS)
 BUILT = built
 HEADERS = $(wildcard src/*.h)
 TEMPLATE = $(CUBE)/Projects/NUCLEO-G031K8/Templates

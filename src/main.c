@@ -31,11 +31,19 @@ int main(void) {
     SystemClock_Config();
     led_init();
 
+    uart_init();
+
+    uint32_t k = 0;
+
     uint32_t lastBlink = HAL_GetTick();
     while (1) {
         if (HAL_GetTick() - lastBlink > 300) {
             lastBlink = HAL_GetTick();
             led_toggle();
+            if (k++ > 5) {
+                k = 0;
+                uart_start_tx("Hello world!", 12);
+            }
         }
 
         // process_packets();

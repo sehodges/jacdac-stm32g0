@@ -26,6 +26,10 @@ void target_disable_irq();
 int itoa(int n, char *s);
 int string_reverse(char *s);
 
+void uart_init();
+void uart_start_tx(const void *data, uint32_t numbytes);
+void uart_start_rx(void *data, uint32_t maxbytes);
+
 #ifdef __cplusplus
 }
 #endif
