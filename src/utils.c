@@ -66,13 +66,12 @@ int itoa(int n, char *s)
 
     // Record the sign of the number,
     // Ensure our working value is positive.
-    if (positive)
-        n = -n;
-
+    unsigned k = positive ? n : -n;
+   
     // Calculate each character, starting with the LSB.
     do {
-         s[i++] = (n % 10) + '0';
-    } while ((n /= 10) > 0);
+         s[i++] = (k % 10) + '0';
+    } while ((k /= 10) > 0);
 
     // Add a negative sign as needed
     if (!positive)
