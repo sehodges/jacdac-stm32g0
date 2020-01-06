@@ -12,6 +12,21 @@ void led_init() {
     HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);
 
     HAL_GPIO_WritePin(GPIOC, GPIO_InitStructure.Pin, GPIO_PIN_RESET);
+
+    GPIO_InitStructure.Pin = GPIO_PIN_7;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
+}
+
+void set_log_pin(int v) {
+    if (v)
+        LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_7);
+    else
+        LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_7);
+}
+
+void pulse_log_pin() {
+    set_log_pin(1);
+    set_log_pin(0);
 }
 
 void led_toggle() {
@@ -21,10 +36,7 @@ void led_set(int state) {
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, state);
 }
 
-void handle_pkt(uint32_t serviceId, const void *data, uint32_t size)
-{
-
-}
+void handle_pkt(uint32_t serviceId, const void *data, uint32_t size) {}
 
 int main(void) {
     HAL_Init();
@@ -32,8 +44,8 @@ int main(void) {
     led_init();
 
     for (int i = 0; i < 0; ++i) {
-    led_toggle();
-    HAL_Delay(250);
+        led_toggle();
+        HAL_Delay(250);
     }
 
     uart_init();
@@ -45,7 +57,7 @@ int main(void) {
         if (HAL_GetTick() - lastBlink > 300) {
             lastBlink = HAL_GetTick();
             led_toggle();
-            uart_start_tx(buf, 12);
+            uart_start_tx("Hello world!", 12);
         }
 
         // process_packets();

@@ -12,28 +12,81 @@
 #include "stm32g0xx_ll_gpio.h"
 
 #define USART_IDX 1
+
+#if USART_IDX == 1
 #define USARTx USART1
 #define IRQn USART1_IRQn
 #define IRQHandler USART1_IRQHandler
 #define LL_DMAMUX_REQ_USARTx_RX LL_DMAMUX_REQ_USART1_RX
 #define LL_DMAMUX_REQ_USARTx_TX LL_DMAMUX_REQ_USART1_TX
+#elif USART_IDX == 2
+#define USARTx USART2
+#define IRQn USART2_IRQn
+#define IRQHandler USART2_IRQHandler
+#define LL_DMAMUX_REQ_USARTx_RX LL_DMAMUX_REQ_USART2_RX
+#define LL_DMAMUX_REQ_USARTx_TX LL_DMAMUX_REQ_USART2_TX
+#else
+#error "bad usart"
+#endif
+
+#if USART_IDX == 1
+#define PIN_PORT GPIOB
+#define PIN_PIN LL_GPIO_PIN_6
+#define PIN_AF LL_GPIO_AF_0
+#elif USART_IDX == 2
+#define PIN_PORT GPIOA
+#define PIN_PIN LL_GPIO_PIN_2
+#define PIN_AF LL_GPIO_AF_1
+#else
+#error "bad usart"
+#endif
+
+static void uartOwnsPin(int doesIt) {
+    if (doesIt) {
+        LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_ALTERNATE);
+        LL_GPIO_SetAFPin_0_7(PIN_PORT, PIN_PIN, PIN_AF);
+    } else {
+        LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_INPUT);
+    }
+}
+
+static void disable_uart() {
+    uartOwnsPin(0);
+    LL_USART_Disable(USARTx);
+}
 
 void DMA1_Channel2_3_IRQHandler(void) {
-    DMESG("DMA irq");
-    if (LL_DMA_IsActiveFlag_TC2(DMA1)) {
+    uint32_t isr = DMA1->ISR;
+
+    // DMESG("DMA irq %x", isr);
+
+    if (isr & (DMA_ISR_TCIF2 | DMA_ISR_TEIF2)) {
         LL_DMA_ClearFlag_GI2(DMA1);
         LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_2);
-    } else if (LL_DMA_IsActiveFlag_TE2(DMA1)) {
-        DMESG("USARTx RX Error");
-        LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_2);
+        disable_uart();
+        if (isr & DMA_ISR_TCIF2) {
+            // OK
+        } else {
+            DMESG("USARTx RX Error");
+        }
     }
 
-    if (LL_DMA_IsActiveFlag_TC3(DMA1)) {
+    if (isr & (DMA_ISR_TCIF3 | DMA_ISR_TEIF3)) {
         LL_DMA_ClearFlag_GI3(DMA1);
         LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_3);
-    } else if (LL_DMA_IsActiveFlag_TE3(DMA1)) {
-        DMESG("USARTx TX Error");
-        LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_3);
+
+        if (isr & DMA_ISR_TCIF3) {
+            while (!LL_USART_IsActiveFlag_TC(USARTx))
+                ;
+            LL_USART_RequestBreakSending(USARTx);
+            // DMESG("USARTx %x", USARTx->ISR);
+            while (LL_USART_IsActiveFlag_SBK(USARTx))
+                ;
+            // OK
+        } else {
+            DMESG("USARTx TX Error");
+        }
+        disable_uart();
     }
 }
 
@@ -51,34 +104,28 @@ static void DMA_Init(void) {
     NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 }
 
+static void exti_callback(void *dummy) {
+
+}
+
 static void USART_UART_Init(void) {
     LL_USART_InitTypeDef USART_InitStruct = {0};
-    LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
 
 #if USART_IDX == 2
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
     LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA);
-    /**USARTx GPIO Configuration
-    PA2   ------> USART2_TX
-    */
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_2;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_1;
-    LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 #elif USART_IDX == 1
-    // PB6 --> USART1_TX
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART1);
     LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOB);
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_6;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_0;
-    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 #else
 #error "bad usart"
 #endif
+
+    LL_GPIO_SetPinPull(PIN_PORT, PIN_PIN, LL_GPIO_PULL_UP);
+    LL_GPIO_SetPinSpeed(PIN_PORT, PIN_PIN, LL_GPIO_SPEED_FREQ_HIGH);
+    LL_GPIO_SetPinOutputType(PIN_PORT, PIN_PIN, LL_GPIO_OUTPUT_PUSHPULL);
+    uartOwnsPin(0);
+    set_exti_callback(PIN_PORT, PIN_PIN, exti_callback, NULL);
 
     /* USART_RX Init */
     LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_2, LL_DMAMUX_REQ_USARTx_RX);
@@ -111,7 +158,7 @@ static void USART_UART_Init(void) {
     LL_DMA_EnableIT_TE(DMA1, LL_DMA_CHANNEL_2);
 
     USART_InitStruct.PrescalerValue = LL_USART_PRESCALER_DIV1;
-    USART_InitStruct.BaudRate = 115200;
+    USART_InitStruct.BaudRate = 1000000;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
@@ -125,21 +172,8 @@ static void USART_UART_Init(void) {
     LL_USART_DisableFIFO(USARTx);
     LL_USART_ConfigHalfDuplexMode(USARTx);
 
-    LL_USART_Enable(USARTx);
-
-    /* Polling USARTx initialisation */
-    while (!(LL_USART_IsActiveFlag_TEACK(USARTx)))
-        ;
-    //while (!(LL_USART_IsActiveFlag_REACK(USARTx)))
+    // while (!(LL_USART_IsActiveFlag_REACK(USARTx)))
     //    ;
-
-    DMESG("ISR %x", USARTx->ISR);
-    LL_USART_TransmitData8(USARTx, 'X');
-    HAL_Delay(1);
-    LL_USART_TransmitData8(USARTx, 'Y');
-    HAL_Delay(1);
-    for (int i = 0; i < 10; ++i)
-        DMESG("ISR %x", USARTx->ISR);
 }
 
 void uart_init() {
@@ -147,24 +181,58 @@ void uart_init() {
     USART_UART_Init();
 }
 
-void uart_start_tx(const void *data, uint32_t numbytes) {
+static void check_idle() {
     if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_3))
         panic();
-    if (!((uint32_t)data & 0x20000000))
-        panic(); // data should not be in flash  - TODO maybe it's OK
-    DMESG("start TX %x %d", data, numbytes);
-    LL_DMA_ConfigAddresses(DMA1, LL_DMA_CHANNEL_3, (uint32_t)data,
-                           (uint32_t) &(USARTx->TDR),
+    if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_2))
+        panic();
+    if (LL_USART_IsEnabled(USARTx))
+        panic();
+}
+
+void uart_start_tx(const void *data, uint32_t numbytes) {
+    check_idle();
+
+    // DMESG("start TX %x %d", data, numbytes);
+
+    LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_OUTPUT);
+    LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
+    wait_us(9);
+    LL_GPIO_SetOutputPin(PIN_PORT, PIN_PIN);
+
+    // from here...
+    uartOwnsPin(1);
+    LL_USART_DisableDirectionRx(USARTx);
+    LL_USART_EnableDirectionTx(USARTx);
+    LL_USART_Enable(USARTx);
+    while (!(LL_USART_IsActiveFlag_TEACK(USARTx)))
+        ;
+
+    LL_DMA_ConfigAddresses(DMA1, LL_DMA_CHANNEL_3, (uint32_t)data, (uint32_t) & (USARTx->TDR),
                            LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
     LL_DMA_SetDataLength(DMA1, LL_DMA_CHANNEL_3, numbytes);
     LL_USART_EnableDMAReq_TX(USARTx);
+    // to here, it's about 1.3us
+
+    // the USART takes a few us to start transmiting
+    // this value gives 60us from the end of low pulse to start bit
+    wait_us(57);
+
     LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_3);
 }
 
 void uart_start_rx(void *data, uint32_t maxbytes) {
-    LL_DMA_ConfigAddresses(DMA1, LL_DMA_CHANNEL_2,
-                           (uint32_t) &(USARTx->RDR),
-                           (uint32_t)data, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
+    check_idle();
+
+    uartOwnsPin(1);
+    LL_USART_DisableDirectionTx(USARTx);
+    LL_USART_EnableDirectionRx(USARTx);
+    LL_USART_Enable(USARTx);
+    while (!(LL_USART_IsActiveFlag_REACK(USARTx)))
+        ;
+
+    LL_DMA_ConfigAddresses(DMA1, LL_DMA_CHANNEL_2, (uint32_t) & (USARTx->RDR), (uint32_t)data,
+                           LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
     LL_DMA_SetDataLength(DMA1, LL_DMA_CHANNEL_2, maxbytes);
     LL_USART_EnableDMAReq_RX(USARTx);
     LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_2);
