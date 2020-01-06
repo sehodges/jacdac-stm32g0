@@ -22,6 +22,48 @@ void SysTick_Handler(void) {
     HAL_IncTick();
 }
 
+static void enable_nrst_pin() {
+    DMESG("check NRST", FLASH->OPTR & FLASH_OPTR_NRST_MODE);
+
+    if (FLASH->OPTR & FLASH_OPTR_NRST_MODE_0)
+        return;
+
+    uint32_t nrstmode;
+
+    /* Enable Flash access anyway */
+    __HAL_RCC_FLASH_CLK_ENABLE();
+
+    /* Unlock flash */
+    FLASH->KEYR = FLASH_KEY1;
+    FLASH->KEYR = FLASH_KEY2;
+    while ((FLASH->CR & FLASH_CR_LOCK) != 0x00)
+        ;
+
+    /* unlock option byte registers */
+    FLASH->OPTKEYR = 0x08192A3B;
+    FLASH->OPTKEYR = 0x4C5D6E7F;
+    while ((FLASH->CR & FLASH_CR_OPTLOCK) == FLASH_CR_OPTLOCK)
+        ;
+
+    /* get current user option bytes */
+    nrstmode = (FLASH->OPTR & ~FLASH_OPTR_NRST_MODE);
+    nrstmode |= FLASH_OPTR_NRST_MODE_0;
+
+    /* Program option bytes */
+    FLASH->OPTR = nrstmode;
+
+    /* Write operation */
+    FLASH->CR |= FLASH_CR_OPTSTRT;
+    while ((FLASH->SR & FLASH_SR_BSY1) != 0)
+        ;
+
+    /* Force OB Load */
+    FLASH->CR |= FLASH_CR_OBL_LAUNCH;
+
+    while (1)
+        ;
+}
+
 void SystemClock_Config(void) {
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
     RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
@@ -52,4 +94,6 @@ void SystemClock_Config(void) {
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
         panic();
     }
+
+    enable_nrst_pin();
 }
