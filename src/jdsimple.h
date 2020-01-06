@@ -34,6 +34,8 @@ int string_reverse(char *s);
 typedef void (*cb_t)(void *);
 void set_exti_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback, void *cb_arg);
 
+void tim_init();
+
 void uart_init();
 void uart_start_tx(const void *data, uint32_t numbytes);
 void uart_start_rx(void *data, uint32_t maxbytes);

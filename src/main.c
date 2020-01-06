@@ -48,6 +48,7 @@ int main(void) {
         HAL_Delay(250);
     }
 
+    tim_init();
     uart_init();
 
     uint32_t lastBlink = HAL_GetTick();
