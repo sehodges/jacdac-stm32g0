@@ -35,6 +35,8 @@ typedef void (*cb_t)(void *);
 void set_exti_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback, void *cb_arg);
 
 void tim_init();
+uint64_t get_micros();
+void set_timer(int delta, cb_t cb, void *arg);
 
 void uart_init();
 void uart_start_tx(const void *data, uint32_t numbytes);

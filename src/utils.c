@@ -92,3 +92,33 @@ void wait_us(int n) {
                          :                     // no clobber
     );
 }
+
+// https://tools.ietf.org/html/draft-eastlake-fnv-14#section-3
+uint32_t hash_fnv1a(const void *data, unsigned len) {
+    const uint8_t *d = (const uint8_t *)data;
+    uint32_t h = 0x811c9dc5;
+    while (len--)
+        h = (h * 0x1000193) ^ *d++;
+    return h;
+}
+
+uint32_t device_id_hash() {
+    uint32_t *uid = (uint32_t *)UID_BASE;
+    return hash_fnv1a(uid, 12);
+}
+
+uint64_t device_id() {
+    // clear "universal" bit
+    uint32_t w0 = device_id_hash() & ~0x02000000;
+    uint32_t w1 = ((uint32_t *)UID_BASE)[2];
+    return (uint64_t)w0 << 32 | w1;
+}
+
+static uint32_t seed;
+uint32_t random() {
+    if (seed == 0) {
+        seed = device_id_hash();
+    }
+    seed *= 0x1000193; // TODO
+    return seed;
+}
