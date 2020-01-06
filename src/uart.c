@@ -17,6 +17,7 @@
 #define IRQHandler USART1_IRQHandler
 
 void DMA1_Channel2_3_IRQHandler(void) {
+    DMESG("DMA irq");
     if (LL_DMA_IsActiveFlag_TC2(DMA1)) {
         LL_DMA_ClearFlag_GI2(DMA1);
         LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_2);
@@ -55,9 +56,9 @@ static void USART_UART_Init(void) {
     GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
     GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
     GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+    GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
 
-#if USART_IDX == 1
+#if USART_IDX == 2
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
     LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA);
     /**USARTdev GPIO Configuration
@@ -66,7 +67,7 @@ static void USART_UART_Init(void) {
     GPIO_InitStruct.Pin = LL_GPIO_PIN_2;
     GPIO_InitStruct.Alternate = LL_GPIO_AF_1;
     LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-#elif USART_IDX == 2
+#elif USART_IDX == 1
     // PB6 --> USART1_TX
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART1);
     LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOB);
@@ -112,7 +113,7 @@ static void USART_UART_Init(void) {
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_NONE;
-    USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX_RX;
+    USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX;
     USART_InitStruct.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
     USART_InitStruct.OverSampling = LL_USART_OVERSAMPLING_16;
     LL_USART_Init(USARTdev, &USART_InitStruct);
@@ -125,14 +126,18 @@ static void USART_UART_Init(void) {
     LL_USART_Enable(USARTdev);
 
     /* Polling USARTdev initialisation */
-    while ((!(LL_USART_IsActiveFlag_TEACK(USARTdev))) ||
-           (!(LL_USART_IsActiveFlag_REACK(USARTdev)))) {
-    }
+    while (!(LL_USART_IsActiveFlag_TEACK(USARTdev)))
+        ;
+    //while (!(LL_USART_IsActiveFlag_REACK(USARTdev)))
+    //    ;
 
-    /* Polling USARTdev initialisation */
-    while ((!(LL_USART_IsActiveFlag_TEACK(USARTdev))) ||
-           (!(LL_USART_IsActiveFlag_REACK(USARTdev)))) {
-    }
+    DMESG("ISR %x", USARTdev->ISR);
+    LL_USART_TransmitData8(USARTdev, 'X');
+    HAL_Delay(1);
+    LL_USART_TransmitData8(USARTdev, 'Y');
+    HAL_Delay(1);
+    for (int i = 0; i < 10; ++i)
+        DMESG("ISR %x", USARTdev->ISR);
 }
 
 void uart_init() {
@@ -141,9 +146,14 @@ void uart_init() {
 }
 
 void uart_start_tx(const void *data, uint32_t numbytes) {
+    if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_3))
+        panic();
+    if (!((uint32_t)data & 0x20000000))
+        panic(); // data should not be in flash  - TODO maybe it's OK
+    DMESG("start TX %x %d", data, numbytes);
     LL_DMA_ConfigAddresses(DMA1, LL_DMA_CHANNEL_3, (uint32_t)data,
                            LL_USART_DMA_GetRegAddr(USARTdev, LL_USART_DMA_REG_DATA_TRANSMIT),
-                           LL_DMA_GetDataTransferDirection(DMA1, LL_DMA_CHANNEL_3));
+                           LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
     LL_DMA_SetDataLength(DMA1, LL_DMA_CHANNEL_3, numbytes);
     LL_USART_EnableDMAReq_TX(USARTdev);
     LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_3);
@@ -152,7 +162,7 @@ void uart_start_tx(const void *data, uint32_t numbytes) {
 void uart_start_rx(void *data, uint32_t maxbytes) {
     LL_DMA_ConfigAddresses(DMA1, LL_DMA_CHANNEL_2,
                            LL_USART_DMA_GetRegAddr(USARTdev, LL_USART_DMA_REG_DATA_RECEIVE),
-                           (uint32_t)data, LL_DMA_GetDataTransferDirection(DMA1, LL_DMA_CHANNEL_2));
+                           (uint32_t)data, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
     LL_DMA_SetDataLength(DMA1, LL_DMA_CHANNEL_2, maxbytes);
     LL_USART_EnableDMAReq_RX(USARTdev);
     LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_2);
