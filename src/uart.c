@@ -93,7 +93,7 @@ void DMA1_Channel2_3_IRQHandler(void) {
             DMESG("USARTx TX Error");
             errCode = -1;
         }
-        
+
         disable_uart();
 
         tx_completed(errCode);
@@ -103,10 +103,10 @@ void DMA1_Channel2_3_IRQHandler(void) {
 static void DMA_Init(void) {
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
 
-    // NVIC_SetPriority(DMA1_Channel1_IRQn, 0);
+    // NVIC_SetPriority(DMA1_Channel1_IRQn, 1);
     // NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
-    NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0);
+    NVIC_SetPriority(DMA1_Channel2_3_IRQn, 1);
     NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 }
 
@@ -152,7 +152,7 @@ static void USART_UART_Init(void) {
     LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_3, LL_DMA_MDATAALIGN_BYTE);
 
     /* USARTx interrupt Init */
-    NVIC_SetPriority(IRQn, 0);
+    NVIC_SetPriority(IRQn, 1);
     NVIC_EnableIRQ(IRQn);
 
     /* Enable DMA transfer complete/error interrupts  */
