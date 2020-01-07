@@ -41,6 +41,19 @@ int main(void) {
     SystemClock_Config();
     led_init();
 
+#if 0
+    int mi = 200, mx = 0, sm = 0;
+    for (int i = 0; i < 10000; ++i) {
+        int v = random_around(100);
+        if (v < mi)
+            mi = v;
+        if (v > mx)
+            mx = v;
+        sm += v;
+    }
+    DMESG("%d-%d av %d", mi, mx, sm / 10000);
+#endif
+
     for (int i = 0; i < 0; ++i) {
         led_toggle();
         HAL_Delay(250);

@@ -34,6 +34,8 @@ void target_disable_irq();
 void wait_us(int n);
 int itoa(int n, char *s);
 int string_reverse(char *s);
+uint32_t random();
+uint32_t random_around(uint32_t v);
 
 // exti.c
 void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback);

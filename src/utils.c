@@ -130,3 +130,11 @@ uint32_t random() {
     seed = x;
     return x;
 }
+
+// return v +/- 25% or so
+uint32_t random_around(uint32_t v) {
+    uint32_t mask = 0xfffffff;
+    while (mask > v)
+        mask >>= 1;
+    return (v - (mask >> 1)) + (random() & mask);
+}

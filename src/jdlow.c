@@ -2,6 +2,7 @@
 
 static uint32_t rxBuffer[256 / 4];
 static void set_tick_timer();
+static uint64_t nextAnnounce;
 
 void handle_raw_pkt(const void *data, uint32_t size) {
     uint8_t *dd = (uint8_t *)data;
@@ -19,7 +20,10 @@ void jd_tx_completed(int errCode) {
 }
 
 static void tick() {
-    pulse_log_pin();
+    if (tim_get_micros() > nextAnnounce) {
+        pulse_log_pin();
+        nextAnnounce = tim_get_micros() + random_around(400000);
+    }
     set_tick_timer();
 }
 
