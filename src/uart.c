@@ -51,7 +51,7 @@ static void uartOwnsPin(int doesIt) {
     }
 }
 
-static void disable_uart() {
+void uart_disable() {
     LL_DMA_ClearFlag_GI2(DMA1);
     LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_2);
 
@@ -68,7 +68,7 @@ void DMA1_Channel2_3_IRQHandler(void) {
     // DMESG("DMA irq %x", isr);
 
     if (isr & (DMA_ISR_TCIF2 | DMA_ISR_TEIF2)) {
-        disable_uart();
+        uart_disable();
         if (isr & DMA_ISR_TCIF2) {
             // overrun?
             DMESG("USARTx RX OK, but how?!");
@@ -94,7 +94,7 @@ void DMA1_Channel2_3_IRQHandler(void) {
             errCode = -1;
         }
 
-        disable_uart();
+        uart_disable();
 
         tx_completed(errCode);
     }
@@ -109,8 +109,6 @@ static void DMA_Init(void) {
     NVIC_SetPriority(DMA1_Channel2_3_IRQn, 1);
     NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 }
-
-static void exti_callback();
 
 static void USART_UART_Init(void) {
     LL_USART_InitTypeDef USART_InitStruct = {0};
@@ -129,7 +127,7 @@ static void USART_UART_Init(void) {
     LL_GPIO_SetPinSpeed(PIN_PORT, PIN_PIN, LL_GPIO_SPEED_FREQ_HIGH);
     LL_GPIO_SetPinOutputType(PIN_PORT, PIN_PIN, LL_GPIO_OUTPUT_PUSHPULL);
     uartOwnsPin(0);
-    set_exti_callback(PIN_PORT, PIN_PIN, exti_callback);
+    set_exti_callback(PIN_PORT, PIN_PIN, uart_line_falling);
 
     /* USART_RX Init */
     LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_2, LL_DMAMUX_REQ_USARTx_RX);
@@ -250,32 +248,10 @@ void uart_start_rx(void *data, uint32_t maxbytes) {
     LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_2);
 }
 
-static uint32_t rxBuffer[256 / 4];
-
-static void rx_timeout() {
-    disable_uart();
-    DMESG("RX timeout");
-}
-
-static void exti_callback() {
-    pulse_log_pin();
-    rxBuffer[0] = 0;
-    rxBuffer[1] = 0;
-    wait_us(15); // otherwise we can enable RX in the middle of LO pulse
-    uart_start_rx(rxBuffer, sizeof(rxBuffer));
-    pulse_log_pin();
-    set_timer(sizeof(rxBuffer) * 11 + 60, rx_timeout);
-}
-
 // this is only enabled for error events
 void IRQHandler(void) {
     pulse_log_pin();
-
-    uint32_t sz = sizeof(rxBuffer) - LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_2);
-
-    disable_uart();
-
-    set_timer(0, NULL);
-
-    handle_raw_pkt(rxBuffer, sz);
+    uint32_t dataLeft = LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_2);
+    uart_disable();
+    rx_completed(dataLeft);
 }

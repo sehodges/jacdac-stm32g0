@@ -43,10 +43,13 @@ void set_timer(int delta, cb_t cb);
 void uart_init();
 void uart_start_tx(const void *data, uint32_t numbytes);
 void uart_start_rx(void *data, uint32_t maxbytes);
+void uart_disable();
 
 // jdlow.c
 void tx_completed(int errCode);
+void rx_completed(int dataLeft);
 void handle_raw_pkt(const void *data, uint32_t size);
+void uart_line_falling();
 
 
 #ifdef __cplusplus
