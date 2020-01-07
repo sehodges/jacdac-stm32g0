@@ -110,7 +110,7 @@ static void DMA_Init(void) {
     NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 }
 
-static void exti_callback(void *dummy);
+static void exti_callback();
 
 static void USART_UART_Init(void) {
     LL_USART_InitTypeDef USART_InitStruct = {0};
@@ -129,7 +129,7 @@ static void USART_UART_Init(void) {
     LL_GPIO_SetPinSpeed(PIN_PORT, PIN_PIN, LL_GPIO_SPEED_FREQ_HIGH);
     LL_GPIO_SetPinOutputType(PIN_PORT, PIN_PIN, LL_GPIO_OUTPUT_PUSHPULL);
     uartOwnsPin(0);
-    set_exti_callback(PIN_PORT, PIN_PIN, exti_callback, NULL);
+    set_exti_callback(PIN_PORT, PIN_PIN, exti_callback);
 
     /* USART_RX Init */
     LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_2, LL_DMAMUX_REQ_USARTx_RX);
@@ -252,19 +252,19 @@ void uart_start_rx(void *data, uint32_t maxbytes) {
 
 static uint32_t rxBuffer[256 / 4];
 
-static void rx_timeout(void *dummy) {
+static void rx_timeout() {
     disable_uart();
     DMESG("RX timeout");
 }
 
-static void exti_callback(void *dummy) {
+static void exti_callback() {
     pulse_log_pin();
     rxBuffer[0] = 0;
     rxBuffer[1] = 0;
     wait_us(15); // otherwise we can enable RX in the middle of LO pulse
     uart_start_rx(rxBuffer, sizeof(rxBuffer));
     pulse_log_pin();
-    set_timer(sizeof(rxBuffer) * 11 + 60, rx_timeout, NULL);
+    set_timer(sizeof(rxBuffer) * 11 + 60, rx_timeout);
 }
 
 // this is only enabled for error events
@@ -275,7 +275,7 @@ void IRQHandler(void) {
 
     disable_uart();
 
-    set_timer(0, NULL, NULL);
+    set_timer(0, NULL);
 
     handle_raw_pkt(rxBuffer, sz);
 }

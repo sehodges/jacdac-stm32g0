@@ -2,14 +2,13 @@
 #include "stm32g0xx_ll_exti.h"
 
 static cb_t callbacks[16];
-static void *callback_args[16];
 
 static void check_line(int ln) {
     uint32_t pin = 1 << ln;
 
     if (LL_EXTI_IsActiveFallingFlag_0_31(pin) != RESET) {
         LL_EXTI_ClearFallingFlag_0_31(pin);
-        callbacks[ln](callback_args[ln]);
+        callbacks[ln]();
     }
 }
 
@@ -35,7 +34,7 @@ void enable_exti(uint32_t pin) {
     LL_EXTI_EnableIT_0_31(pin);
 }
 
-void set_exti_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback, void *cb_arg) {
+void set_exti_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback) {
     uint32_t extiport = 0;
 
     if (port == GPIOA)
@@ -57,7 +56,6 @@ void set_exti_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback, void *cb
             LL_EXTI_EnableIT_0_31(1 << pos);
             LL_EXTI_EnableFallingTrig_0_31(1 << pos);
             callbacks[pos] = callback;
-            callback_args[pos] = cb_arg;
         }
     }
 

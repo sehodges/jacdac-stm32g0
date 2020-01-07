@@ -21,13 +21,11 @@ uint64_t get_micros() {
 }
 
 static cb_t timer_cb;
-static void *timer_cb_arg;
 
-void set_timer(int delta, cb_t cb, void *arg) {
+void set_timer(int delta, cb_t cb) {
     if (delta < 10)
         delta = 10;
     timer_cb = cb;
-    timer_cb_arg = arg;
     LL_TIM_OC_SetCompareCH1(TIMx, TIMx->CNT + delta);
 }
 
@@ -72,7 +70,7 @@ void tim_init() {
 
     LL_TIM_EnableCounter(TIMx);
 
-    set_timer(5000, NULL, NULL);
+    set_timer(5000, NULL);
 
     /* Configure the Cortex-M SysTick source to have 1ms time base */
     // LL_Init1msTick(SystemCoreClock);
@@ -96,11 +94,10 @@ void TIMx_IRQHandler() {
         //pulse_log_pin();
 
         cb_t f = timer_cb;
-        void *arg = timer_cb_arg;
 
-        set_timer(10000, NULL, NULL);
+        set_timer(10000, NULL);
 
         if (f)
-            f(arg);
+            f();
     }
 }
