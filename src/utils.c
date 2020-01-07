@@ -119,6 +119,12 @@ uint32_t random() {
     if (seed == 0) {
         seed = device_id_hash();
     }
-    seed *= 0x1000193; // TODO
-    return seed;
+
+    // xorshift algorithm
+    uint32_t x = seed;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    seed = x;
+    return x;
 }
