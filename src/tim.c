@@ -86,14 +86,14 @@ void TIMx_IRQHandler() {
         LL_TIM_ClearFlag_UPDATE(TIMx);
         timeoff += 0x10000;
 
-        pulse_log_pin();
-        pulse_log_pin();
+        //pulse_log_pin();
+        //pulse_log_pin();
     }
 
     if (LL_TIM_IsActiveFlag_CC1(TIMx) == 1) {
         LL_TIM_ClearFlag_CC1(TIMx);
 
-        pulse_log_pin();
+        //pulse_log_pin();
 
         cb_t f = timer_cb;
         void *arg = timer_cb_arg;

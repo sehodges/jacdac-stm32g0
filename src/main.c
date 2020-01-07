@@ -36,8 +36,6 @@ void led_set(int state) {
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, state);
 }
 
-void handle_pkt(uint32_t serviceId, const void *data, uint32_t size) {}
-
 int main(void) {
     HAL_Init();
     SystemClock_Config();
@@ -54,11 +52,13 @@ int main(void) {
     uint32_t lastBlink = HAL_GetTick();
     char buf[20];
     strcpy(buf, "Hello world!");
+    int n = 0;
     while (1) {
         if (HAL_GetTick() - lastBlink > 300) {
             lastBlink = HAL_GetTick();
             led_toggle();
-            uart_start_tx("Hello world!", 12);
+            buf[12] = n++;
+            // uart_start_tx(buf, 13);
         }
 
         // process_packets();

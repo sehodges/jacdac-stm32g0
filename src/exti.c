@@ -26,6 +26,15 @@ void EXTI4_15_IRQHandler() {
         check_line(i);
 }
 
+void disable_exti(uint32_t pin) {
+    LL_EXTI_DisableIT_0_31(pin);
+}
+
+void enable_exti(uint32_t pin) {
+    LL_EXTI_ClearFallingFlag_0_31(pin);
+    LL_EXTI_EnableIT_0_31(pin);
+}
+
 void set_exti_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback, void *cb_arg) {
     uint32_t extiport = 0;
 

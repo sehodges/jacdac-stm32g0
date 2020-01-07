@@ -114,6 +114,8 @@ uint64_t device_id() {
     return (uint64_t)w0 << 32 | w1;
 }
 
+// need to seed from somewhere if no DevID, eg http://robseward.com/misc/RNG2/
+
 static uint32_t seed;
 uint32_t random() {
     if (seed == 0) {

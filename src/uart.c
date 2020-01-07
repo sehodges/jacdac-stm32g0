@@ -47,10 +47,17 @@ static void uartOwnsPin(int doesIt) {
         LL_GPIO_SetAFPin_0_7(PIN_PORT, PIN_PIN, PIN_AF);
     } else {
         LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_INPUT);
+        enable_exti(PIN_PIN);
     }
 }
 
 static void disable_uart() {
+    LL_DMA_ClearFlag_GI2(DMA1);
+    LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_2);
+
+    LL_DMA_ClearFlag_GI3(DMA1);
+    LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_3);
+
     uartOwnsPin(0);
     LL_USART_Disable(USARTx);
 }
@@ -61,11 +68,10 @@ void DMA1_Channel2_3_IRQHandler(void) {
     // DMESG("DMA irq %x", isr);
 
     if (isr & (DMA_ISR_TCIF2 | DMA_ISR_TEIF2)) {
-        LL_DMA_ClearFlag_GI2(DMA1);
-        LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_2);
         disable_uart();
         if (isr & DMA_ISR_TCIF2) {
-            // OK
+            // overrun?
+            DMESG("USARTx RX OK, but how?!");
         } else {
             DMESG("USARTx RX Error");
         }
@@ -75,6 +81,7 @@ void DMA1_Channel2_3_IRQHandler(void) {
         LL_DMA_ClearFlag_GI3(DMA1);
         LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_3);
 
+        int errCode = 0;
         if (isr & DMA_ISR_TCIF3) {
             while (!LL_USART_IsActiveFlag_TC(USARTx))
                 ;
@@ -82,16 +89,15 @@ void DMA1_Channel2_3_IRQHandler(void) {
             // DMESG("USARTx %x", USARTx->ISR);
             while (LL_USART_IsActiveFlag_SBK(USARTx))
                 ;
-            // OK
         } else {
             DMESG("USARTx TX Error");
+            errCode = -1;
         }
+        
         disable_uart();
-    }
-}
 
-void IRQHandler(void) {
-    DMESG("USARTx handler");
+        tx_completed(errCode);
+    }
 }
 
 static void DMA_Init(void) {
@@ -104,9 +110,7 @@ static void DMA_Init(void) {
     NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 }
 
-static void exti_callback(void *dummy) {
-
-}
+static void exti_callback(void *dummy);
 
 static void USART_UART_Init(void) {
     LL_USART_InitTypeDef USART_InitStruct = {0};
@@ -171,6 +175,8 @@ static void USART_UART_Init(void) {
     LL_USART_SetRXFIFOThreshold(USARTx, LL_USART_FIFOTHRESHOLD_1_8);
     LL_USART_DisableFIFO(USARTx);
     LL_USART_ConfigHalfDuplexMode(USARTx);
+    LL_USART_EnableIT_ERROR(USARTx);
+    // LL_USART_EnableDMADeactOnRxErr(USARTx);
 
     // while (!(LL_USART_IsActiveFlag_REACK(USARTx)))
     //    ;
@@ -195,6 +201,8 @@ void uart_start_tx(const void *data, uint32_t numbytes) {
 
     // DMESG("start TX %x %d", data, numbytes);
 
+    disable_exti(PIN_PIN);
+
     LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
     wait_us(9);
@@ -204,6 +212,7 @@ void uart_start_tx(const void *data, uint32_t numbytes) {
     uartOwnsPin(1);
     LL_USART_DisableDirectionRx(USARTx);
     LL_USART_EnableDirectionTx(USARTx);
+    USARTx->ICR = USART_ISR_FE | USART_ISR_NE | USART_ISR_ORE; // clear error flags before we start
     LL_USART_Enable(USARTx);
     while (!(LL_USART_IsActiveFlag_TEACK(USARTx)))
         ;
@@ -224,9 +233,12 @@ void uart_start_tx(const void *data, uint32_t numbytes) {
 void uart_start_rx(void *data, uint32_t maxbytes) {
     check_idle();
 
+    disable_exti(PIN_PIN);
+
     uartOwnsPin(1);
     LL_USART_DisableDirectionTx(USARTx);
     LL_USART_EnableDirectionRx(USARTx);
+    USARTx->ICR = USART_ISR_FE | USART_ISR_NE | USART_ISR_ORE; // clear error flags before we start
     LL_USART_Enable(USARTx);
     while (!(LL_USART_IsActiveFlag_REACK(USARTx)))
         ;
@@ -236,4 +248,34 @@ void uart_start_rx(void *data, uint32_t maxbytes) {
     LL_DMA_SetDataLength(DMA1, LL_DMA_CHANNEL_2, maxbytes);
     LL_USART_EnableDMAReq_RX(USARTx);
     LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_2);
+}
+
+static uint32_t rxBuffer[256 / 4];
+
+static void rx_timeout(void *dummy) {
+    disable_uart();
+    DMESG("RX timeout");
+}
+
+static void exti_callback(void *dummy) {
+    pulse_log_pin();
+    rxBuffer[0] = 0;
+    rxBuffer[1] = 0;
+    wait_us(15); // otherwise we can enable RX in the middle of LO pulse
+    uart_start_rx(rxBuffer, sizeof(rxBuffer));
+    pulse_log_pin();
+    set_timer(sizeof(rxBuffer) * 11 + 60, rx_timeout, NULL);
+}
+
+// this is only enabled for error events
+void IRQHandler(void) {
+    pulse_log_pin();
+
+    uint32_t sz = sizeof(rxBuffer) - LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_2);
+
+    disable_uart();
+
+    set_timer(0, NULL, NULL);
+
+    handle_raw_pkt(rxBuffer, sz);
 }
