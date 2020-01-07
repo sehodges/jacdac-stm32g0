@@ -52,6 +52,7 @@ void uart_start_rx(void *data, uint32_t maxbytes);
 void uart_disable();
 
 // jdlow.c
+void jd_init();
 void jd_tx_completed(int errCode);
 void jd_rx_completed(int dataLeft);
 void jd_line_falling();

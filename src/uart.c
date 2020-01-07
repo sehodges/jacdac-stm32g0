@@ -250,7 +250,7 @@ void uart_start_rx(void *data, uint32_t maxbytes) {
 
 // this is only enabled for error events
 void IRQHandler(void) {
-    pulse_log_pin();
+    //pulse_log_pin();
     uint32_t dataLeft = LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_2);
     uart_disable();
     jd_rx_completed(dataLeft);
