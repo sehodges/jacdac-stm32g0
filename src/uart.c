@@ -47,7 +47,7 @@ static void uartOwnsPin(int doesIt) {
         LL_GPIO_SetAFPin_0_7(PIN_PORT, PIN_PIN, PIN_AF);
     } else {
         LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_INPUT);
-        enable_exti(PIN_PIN);
+        exti_enable(PIN_PIN);
     }
 }
 
@@ -96,7 +96,7 @@ void DMA1_Channel2_3_IRQHandler(void) {
 
         uart_disable();
 
-        tx_completed(errCode);
+        jd_tx_completed(errCode);
     }
 }
 
@@ -127,7 +127,7 @@ static void USART_UART_Init(void) {
     LL_GPIO_SetPinSpeed(PIN_PORT, PIN_PIN, LL_GPIO_SPEED_FREQ_HIGH);
     LL_GPIO_SetPinOutputType(PIN_PORT, PIN_PIN, LL_GPIO_OUTPUT_PUSHPULL);
     uartOwnsPin(0);
-    set_exti_callback(PIN_PORT, PIN_PIN, uart_line_falling);
+    exti_set_callback(PIN_PORT, PIN_PIN, jd_line_falling);
 
     /* USART_RX Init */
     LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_2, LL_DMAMUX_REQ_USARTx_RX);
@@ -199,7 +199,7 @@ void uart_start_tx(const void *data, uint32_t numbytes) {
 
     // DMESG("start TX %x %d", data, numbytes);
 
-    disable_exti(PIN_PIN);
+    exti_disable(PIN_PIN);
 
     LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
@@ -231,7 +231,7 @@ void uart_start_tx(const void *data, uint32_t numbytes) {
 void uart_start_rx(void *data, uint32_t maxbytes) {
     check_idle();
 
-    disable_exti(PIN_PIN);
+    exti_disable(PIN_PIN);
 
     uartOwnsPin(1);
     LL_USART_DisableDirectionTx(USARTx);
@@ -253,5 +253,5 @@ void IRQHandler(void) {
     pulse_log_pin();
     uint32_t dataLeft = LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_2);
     uart_disable();
-    rx_completed(dataLeft);
+    jd_rx_completed(dataLeft);
 }

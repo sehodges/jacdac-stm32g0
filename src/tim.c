@@ -10,7 +10,7 @@
 
 static volatile uint64_t timeoff;
 
-uint64_t get_micros() {
+uint64_t tim_get_micros() {
     while (1) {
         uint32_t v0 = TIMx->CNT;
         uint64_t off = timeoff;
@@ -22,7 +22,7 @@ uint64_t get_micros() {
 
 static cb_t timer_cb;
 
-void set_timer(int delta, cb_t cb) {
+void tim_set_timer(int delta, cb_t cb) {
     if (delta < 10)
         delta = 10;
     timer_cb = cb;
@@ -70,7 +70,7 @@ void tim_init() {
 
     LL_TIM_EnableCounter(TIMx);
 
-    set_timer(5000, NULL);
+    tim_set_timer(5000, NULL);
 
     /* Configure the Cortex-M SysTick source to have 1ms time base */
     // LL_Init1msTick(SystemCoreClock);
@@ -95,7 +95,7 @@ void TIMx_IRQHandler() {
 
         cb_t f = timer_cb;
 
-        set_timer(10000, NULL);
+        tim_set_timer(10000, NULL);
 
         if (f)
             f();
