@@ -2,6 +2,7 @@
 #include "stm32g0xx_ll_exti.h"
 
 static cb_t callbacks[16];
+static cb_t trigger_cb;
 
 static void check_line(int ln) {
     uint32_t pin = 1 << ln;
@@ -13,6 +14,11 @@ static void check_line(int ln) {
 }
 
 void EXTI0_1_IRQHandler() {
+    cb_t f = trigger_cb;
+    if (f) {
+        trigger_cb = NULL;
+        f();
+    }
     check_line(0);
     check_line(1);
 }
@@ -25,13 +31,11 @@ void EXTI4_15_IRQHandler() {
         check_line(i);
 }
 
-void exti_disable(uint32_t pin) {
-    LL_EXTI_DisableIT_0_31(pin);
-}
-
-void exti_enable(uint32_t pin) {
-    LL_EXTI_ClearFallingFlag_0_31(pin);
-    LL_EXTI_EnableIT_0_31(pin);
+// run cb at EXTI IRQ priority
+void exti_trigger(cb_t cb) {
+    trigger_cb = cb;
+    NVIC_SetPendingIRQ(EXTI0_1_IRQn);
+    // LL_EXTI_GenerateSWI_0_31(1);
 }
 
 void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback) {
