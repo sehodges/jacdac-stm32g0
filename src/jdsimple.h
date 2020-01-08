@@ -38,6 +38,8 @@ void led_toggle();
 void led_set(int state);
 void pulse_log_pin();
 void set_log_pin(int v);
+void set_log_pin2(int v);
+void set_log_pin3(int v);
 
 // utils.c
 void target_enable_irq();
@@ -67,6 +69,7 @@ void uart_disable();
 
 // crc.c
 uint16_t crc16(const void *data, uint32_t size);
+uint16_t crc16soft(const void *data, uint32_t size);
 
 // jdlow.c
 void jd_init();

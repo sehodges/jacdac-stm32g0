@@ -42,8 +42,11 @@ void app_handle_packet(jd_packet_t *pkt) {
     if (pkt->header.service_number == 1) {
         count_service_pkt_t *cs = (count_service_pkt_t *)pkt;
         uint32_t c = cs->count;
-        if (prevCnt && prevCnt + 1 != c)
-            pulse_log_pin();
+        if (prevCnt && prevCnt + 1 != c) {
+            set_log_pin2(1);
+            set_log_pin2(0);
+            DMESG("ERR");
+        }
         prevCnt = c;
     }
 }

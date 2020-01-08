@@ -5,27 +5,29 @@
 #define TX_QUEUE_SIZE 3
 
 static jd_packet_t rxBuffer;
-static void set_tick_timer();
+static void set_tick_timer(uint8_t statusClear);
 static uint64_t nextAnnounce;
 static volatile uint8_t status;
-static uint8_t numPending;
+static volatile uint8_t numPending;
 
 static jd_packet_t *txQueue[TX_QUEUE_SIZE];
 
 void jd_init() {
     tim_init();
-    set_tick_timer();
+    set_tick_timer(0);
     uart_init();
 }
 
 static void tx_done() {
-    status &= ~JD_STATUS_TX_ACTIVE;
-    set_tick_timer();
+    set_log_pin3(0);
+    set_tick_timer(JD_STATUS_TX_ACTIVE);
 }
 
 void jd_tx_completed(int errCode) {
     // DMESG("tx done: %d", errCode);
+    target_disable_irq();
     numPending--;
+    target_enable_irq();
     tx_done();
 }
 
@@ -43,11 +45,11 @@ uint32_t jd_get_free_queue_space() {
 
 static void tick() {
     if (tim_get_micros() > nextAnnounce) {
-        pulse_log_pin();
+        // pulse_log_pin();
         nextAnnounce = tim_get_micros() + random_around(400000);
         app_queue_annouce();
     }
-    set_tick_timer();
+    set_tick_timer(0);
 }
 
 static void shift_queue() {
@@ -58,20 +60,16 @@ static void shift_queue() {
 }
 
 static void flush_tx_queue() {
-    if (status & (JD_STATUS_RX_ACTIVE | JD_STATUS_TX_ACTIVE))
-        return;
-
-    // it's possible to have a race, with jd_line_falling() setting RX here
-
-    status |= JD_STATUS_TX_ACTIVE;
-
-    if (status & JD_STATUS_RX_ACTIVE) {
-        // this protects against the race above
-        DMESG("also a race");
-        tx_done();
+    target_disable_irq();
+    if (status & (JD_STATUS_RX_ACTIVE | JD_STATUS_TX_ACTIVE)) {
+        target_enable_irq();
         return;
     }
 
+    status |= JD_STATUS_TX_ACTIVE;
+    target_enable_irq();
+
+    set_log_pin3(1);
     if (uart_start_tx(txQueue[0], txQueue[0]->header.size + sizeof(jd_packet_header_t)) < 0) {
         DMESG("race on TX");
         tx_done();
@@ -81,11 +79,15 @@ static void flush_tx_queue() {
 
     shift_queue();
 
-    set_tick_timer();
+    set_tick_timer(0);
 }
 
-static void set_tick_timer() {
+static void set_tick_timer(uint8_t statusClear) {
     target_disable_irq();
+    if (statusClear) {
+        // DMESG("st %d @%d", statusClear, status);
+        status &= ~statusClear;
+    }
     if ((status & JD_STATUS_RX_ACTIVE) == 0) {
         if (txQueue[0] && !(status & JD_STATUS_TX_ACTIVE))
             tim_set_timer(random_around(50), flush_tx_queue);
@@ -96,8 +98,7 @@ static void set_tick_timer() {
 }
 
 static void rx_done() {
-    status &= ~JD_STATUS_RX_ACTIVE;
-    set_tick_timer();
+    set_tick_timer(JD_STATUS_RX_ACTIVE);
 }
 
 static void rx_timeout() {
@@ -107,8 +108,11 @@ static void rx_timeout() {
 }
 
 void jd_line_falling() {
+    pulse_log_pin();
+    target_disable_irq();
     if (status & (JD_STATUS_RX_ACTIVE | JD_STATUS_TX_ACTIVE)) {
-        DMESG("stale EXTI?");
+        DMESG("stale EXTI %d", status);
+        target_enable_irq();
         return;
     }
     status |= JD_STATUS_RX_ACTIVE;
@@ -117,6 +121,7 @@ void jd_line_falling() {
     memset(&rxBuffer.header, 0, sizeof(rxBuffer.header));
     uart_start_rx(&rxBuffer, sizeof(rxBuffer));
     tim_set_timer(sizeof(rxBuffer) * 12 + 60, rx_timeout);
+    target_enable_irq();
 }
 
 void jd_rx_completed(int dataLeft) {
@@ -155,7 +160,9 @@ void jd_queue_packet(jd_packet_t *pkt) {
         // drop first packet
         shift_queue();
     } else {
+        target_disable_irq();
         numPending++;
+        target_enable_irq();
     }
 
     for (int i = 0; i < TX_QUEUE_SIZE; ++i) {
@@ -165,5 +172,5 @@ void jd_queue_packet(jd_packet_t *pkt) {
         }
     }
 
-    set_tick_timer();
+    set_tick_timer(0);
 }

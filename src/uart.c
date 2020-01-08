@@ -59,6 +59,7 @@ void uart_disable() {
     LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_3);
 
     uartOwnsPin(0);
+    //pulse_log_pin();
     LL_USART_Disable(USARTx);
 }
 
@@ -105,10 +106,10 @@ void DMA1_Channel2_3_IRQHandler(void) {
 static void DMA_Init(void) {
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
 
-    // NVIC_SetPriority(DMA1_Channel1_IRQn, 3);
+    // NVIC_SetPriority(DMA1_Channel1_IRQn, 0);
     // NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
-    NVIC_SetPriority(DMA1_Channel2_3_IRQn, 3);
+    NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0);
     NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 }
 
@@ -151,7 +152,7 @@ static void USART_UART_Init(void) {
     LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_3, LL_DMA_MDATAALIGN_BYTE);
 
     /* USARTx interrupt Init */
-    NVIC_SetPriority(IRQn, 3);
+    NVIC_SetPriority(IRQn, 0);
     NVIC_EnableIRQ(IRQn);
 
     /* Enable DMA transfer complete/error interrupts  */
@@ -204,7 +205,7 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
 
     exti_disable(PIN_PIN);
     if (LL_GPIO_IsInputPinSet(PIN_PORT, PIN_PIN) == 0) {
-        exti_enable(PIN_PIN);
+    //    exti_enable(PIN_PIN);
         return -1;
     }
     LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_OUTPUT);
@@ -259,7 +260,7 @@ void uart_start_rx(void *data, uint32_t maxbytes) {
 
 // this is only enabled for error events
 void IRQHandler(void) {
-    // pulse_log_pin();
+    //pulse_log_pin();
     uint32_t dataLeft = LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_2);
     uart_disable();
     jd_rx_completed(dataLeft);

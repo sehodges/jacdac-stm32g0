@@ -7,13 +7,16 @@ void target_enable_irq() {
     if (irq_disabled <= 0) {
         irq_disabled = 0;
         __enable_irq();
+        //set_log_pin2(0);
     }
 }
 
 void target_disable_irq() {
     irq_disabled++;
-    if (irq_disabled == 1)
+    if (irq_disabled == 1) {
+        //set_log_pin2(1);
         __disable_irq();
+    }
 }
 
 /**
