@@ -53,6 +53,9 @@ void uart_start_tx(const void *data, uint32_t numbytes);
 void uart_start_rx(void *data, uint32_t maxbytes);
 void uart_disable();
 
+// crc.c
+uint16_t crc16(const void *data, uint32_t size);
+
 // jdlow.c
 void jd_init();
 void jd_tx_completed(int errCode);
