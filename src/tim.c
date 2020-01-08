@@ -20,14 +20,18 @@ uint64_t tim_get_micros() {
     }
 }
 
-static cb_t timer_cb;
+static volatile cb_t timer_cb;
 
 void tim_set_timer(int delta, cb_t cb) {
     if (delta < 10)
         delta = 10;
+
+    target_disable_irq();
     timer_cb = cb;
-    LL_TIM_OC_SetCompareCH1(TIMx, TIMx->CNT + delta);
+    uint16_t nextTrig = TIMx->CNT + (unsigned)delta;
+    LL_TIM_OC_SetCompareCH1(TIMx, nextTrig);
     LL_TIM_ClearFlag_CC1(TIMx);
+    target_enable_irq();
 }
 
 void tim_init() {
@@ -86,12 +90,18 @@ void TIMx_IRQHandler() {
         timeoff += 0x10000;
     }
 
+    cb_t f = NULL;
+
+    // need to disable IRQ while checking flags, otherwise we can get IRQ after
+    // check, which can in turn set the timer_cb
+    target_disable_irq();
     if (LL_TIM_IsActiveFlag_CC1(TIMx) == 1) {
-        cb_t f = timer_cb;
+        f = timer_cb;
+        timer_cb = NULL;
         LL_TIM_ClearFlag_CC1(TIMx);
-        if (f) {
-            timer_cb = NULL;
-            f();
-        }
     }
+    target_enable_irq();
+
+    if (f)
+        f();
 }
