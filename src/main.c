@@ -17,7 +17,7 @@ void led_init() {
     GPIO_InitStructure.Pin = GPIO_PIN_7|GPIO_PIN_1;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
 
-    GPIO_InitStructure.Pin = GPIO_PIN_15;
+    GPIO_InitStructure.Pin = GPIO_PIN_15|GPIO_PIN_10|GPIO_PIN_9;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 
@@ -40,6 +40,20 @@ void set_log_pin3(int v) {
         LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_15);
     else
         LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_15);
+}
+
+void set_log_pin4(int v) {
+    if (v)
+        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_10);
+    else
+        LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_10);
+}
+
+void set_log_pin5(int v) {
+    if (v)
+        LL_GPIO_SetOutputPin(GPIOA, LL_GPIO_PIN_9);
+    else
+        LL_GPIO_ResetOutputPin(GPIOA, LL_GPIO_PIN_9);
 }
 
 void pulse_log_pin() {
@@ -110,6 +124,7 @@ int main(void) {
 
 void panic(void) {
     DMESG("PANIC!");
+    target_disable_irq();
     while (1) {
         led_toggle();
         wait_us(100000);

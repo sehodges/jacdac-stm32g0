@@ -10,6 +10,9 @@ static uint64_t nextAnnounce;
 static volatile uint8_t status;
 static volatile uint8_t numPending;
 
+static uint32_t numFalls;
+static uint32_t numOKPkts;
+
 static jd_packet_t *txQueue[TX_QUEUE_SIZE];
 
 void jd_init() {
@@ -65,7 +68,6 @@ static void flush_tx_queue() {
         target_enable_irq();
         return;
     }
-
     status |= JD_STATUS_TX_ACTIVE;
     target_enable_irq();
 
@@ -73,7 +75,6 @@ static void flush_tx_queue() {
     if (uart_start_tx(txQueue[0], txQueue[0]->header.size + sizeof(jd_packet_header_t)) < 0) {
         DMESG("race on TX");
         tx_done();
-        jd_line_falling();
         return;
     }
 
@@ -97,35 +98,40 @@ static void set_tick_timer(uint8_t statusClear) {
     target_enable_irq();
 }
 
-static void rx_done() {
-    set_tick_timer(JD_STATUS_RX_ACTIVE);
-}
-
 static void rx_timeout() {
-    uart_disable();
-    DMESG("RX timeout");
-    rx_done();
-}
-
-void jd_line_falling() {
-    pulse_log_pin();
     target_disable_irq();
-    if (status & (JD_STATUS_RX_ACTIVE | JD_STATUS_TX_ACTIVE)) {
-        DMESG("stale EXTI %d", status);
-        target_enable_irq();
-        return;
-    }
-    status |= JD_STATUS_RX_ACTIVE;
-    wait_us(15); // otherwise we can enable RX in the middle of LO pulse
-    // also, only clear the buffer after we have waited - gives some more time for processing
-    memset(&rxBuffer.header, 0, sizeof(rxBuffer.header));
-    uart_start_rx(&rxBuffer, sizeof(rxBuffer));
-    tim_set_timer(sizeof(rxBuffer) * 12 + 60, rx_timeout);
+    DMESG("RX timeout");
+    uart_disable();
+    set_log_pin4(0);
+    set_tick_timer(JD_STATUS_RX_ACTIVE);
     target_enable_irq();
 }
 
+void jd_line_falling() {
+     pulse_log_pin();
+    set_log_pin4(1);
+    numFalls++;
+    DMESG("fall %d", numFalls);
+    // target_disable_irq();
+    if (status & JD_STATUS_RX_ACTIVE)
+        panic();
+    status |= JD_STATUS_RX_ACTIVE;
+
+    memset(&rxBuffer.header, 0, sizeof(rxBuffer.header));
+
+    // otherwise we can enable RX in the middle of LO pulse
+    uart_wait_high();
+    wait_us(2);
+
+    uart_start_rx(&rxBuffer, sizeof(rxBuffer));
+
+    tim_set_timer(sizeof(rxBuffer) * 12 + 60, rx_timeout);
+    // target_enable_irq();
+}
+
 void jd_rx_completed(int dataLeft) {
-    rx_done();
+    set_log_pin4(0);
+    set_tick_timer(JD_STATUS_RX_ACTIVE);
 
     if (dataLeft < 0) {
         DMESG("rx error: %d", dataLeft);
@@ -148,6 +154,8 @@ void jd_rx_completed(int dataLeft) {
         DMESG("crc==0");
         return;
     }
+
+    numOKPkts++;
 
     app_handle_packet(&rxBuffer);
 }

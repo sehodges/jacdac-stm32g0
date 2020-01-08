@@ -2,7 +2,7 @@
 #ifndef __JDSIMPLE_H
 #define __JDSIMPLE_H
 
-#define DEVICE_DMESG_BUFFER_SIZE 1024
+#define DEVICE_DMESG_BUFFER_SIZE 0
 
 #include <stdint.h>
 #include <string.h>
@@ -40,6 +40,8 @@ void pulse_log_pin();
 void set_log_pin(int v);
 void set_log_pin2(int v);
 void set_log_pin3(int v);
+void set_log_pin4(int v);
+void set_log_pin5(int v);
 
 // utils.c
 void target_enable_irq();
@@ -53,8 +55,11 @@ uint64_t device_id();
 
 // exti.c
 void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback);
-void exti_disable(uint32_t pin);
-void exti_enable(uint32_t pin);
+void exti_trigger(cb_t cb);
+#define exti_disable(pin) LL_EXTI_DisableIT_0_31(pin)
+#define exti_enable(pin) LL_EXTI_EnableIT_0_31(pin)
+#define exti_enable(pin) LL_EXTI_EnableIT_0_31(pin)
+#define exti_clear(pin) LL_EXTI_ClearFallingFlag_0_31(pin)
 
 // tim.c
 void tim_init();
@@ -66,6 +71,7 @@ void uart_init();
 int uart_start_tx(const void *data, uint32_t numbytes);
 void uart_start_rx(void *data, uint32_t maxbytes);
 void uart_disable();
+void uart_wait_high();
 
 // crc.c
 uint16_t crc16(const void *data, uint32_t size);
