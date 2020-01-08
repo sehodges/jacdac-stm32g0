@@ -35,6 +35,7 @@ void app_process() {
 }
 
 static uint32_t prevCnt;
+uint32_t numErrors;
 void app_handle_packet(jd_packet_t *pkt) {
     DMESG("handle pkt; dst=%x/%d sz=%d", (uint32_t)pkt->header.device_identifier,
           pkt->header.service_number, pkt->header.size);
@@ -46,6 +47,7 @@ void app_handle_packet(jd_packet_t *pkt) {
             set_log_pin2(1);
             set_log_pin2(0);
             DMESG("ERR");
+            numErrors++;
         }
         prevCnt = c;
     }
