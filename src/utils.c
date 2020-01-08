@@ -110,9 +110,14 @@ uint32_t device_id_hash() {
 uint64_t device_id() {
     static uint64_t cache;
     if (!cache) {
+        // serial: 0x330073 0x31365012 0x20313643
+        // serial: 0x71007A 0x31365012 0x20313643
+        // DMESG("serial: %x %x %x", ((uint32_t *)UID_BASE)[0], ((uint32_t *)UID_BASE)[1],
+        //      ((uint32_t *)UID_BASE)[2]);
+
         // clear "universal" bit
-        uint32_t w0 = device_id_hash() & ~0x02000000;
-        uint32_t w1 = ((uint32_t *)UID_BASE)[2];
+        uint32_t w0 = ((uint32_t *)UID_BASE)[0] & ~0x02000000;
+        uint32_t w1 = device_id_hash();
         cache = (uint64_t)w0 << 32 | w1;
     }
     return cache;
