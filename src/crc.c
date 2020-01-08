@@ -18,6 +18,7 @@ uint16_t crc16(const void *data, uint32_t size) {
         // LL_CRC_SetOutputDataReverseMode(CRC, LL_CRC_OUTDATA_REVERSE_NONE);
         LL_CRC_SetPolynomialCoef(CRC, 0x1021);
         LL_CRC_SetPolynomialSize(CRC, LL_CRC_POLYLENGTH_16B);
+        inited = 1;
     }
     LL_CRC_SetInitialData(CRC, LL_CRC_DEFAULT_CRC_INITVALUE);
     const uint8_t *ptr = (const uint8_t *)data;
@@ -42,6 +43,7 @@ uint16_t crc16soft_slow(const void *data, uint32_t size) {
     return crc;
 }
 
+// https://wiki.nicksoft.info/mcu:pic16:crc-16:home
 uint16_t crc16soft(const void *data, uint32_t size) {
     const uint8_t *ptr = (const uint8_t *)data;
     uint16_t crc = 0xffff;
