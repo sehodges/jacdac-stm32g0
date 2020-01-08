@@ -16,8 +16,6 @@
 extern "C" {
 #endif
 
-#include "stm32g0xx_hal.h"
-#include <stdint.h>
 
 typedef void (*cb_t)(void);
 
