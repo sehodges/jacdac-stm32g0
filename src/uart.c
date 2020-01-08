@@ -72,8 +72,10 @@ void DMA1_Channel2_3_IRQHandler(void) {
         if (isr & DMA_ISR_TCIF2) {
             // overrun?
             DMESG("USARTx RX OK, but how?!");
+            jd_rx_completed(-1);
         } else {
             DMESG("USARTx RX Error");
+            jd_rx_completed(-2);
         }
     }
 
@@ -103,10 +105,10 @@ void DMA1_Channel2_3_IRQHandler(void) {
 static void DMA_Init(void) {
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
 
-    // NVIC_SetPriority(DMA1_Channel1_IRQn, 1);
+    // NVIC_SetPriority(DMA1_Channel1_IRQn, 3);
     // NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 
-    NVIC_SetPriority(DMA1_Channel2_3_IRQn, 1);
+    NVIC_SetPriority(DMA1_Channel2_3_IRQn, 3);
     NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 }
 
@@ -150,7 +152,7 @@ static void USART_UART_Init(void) {
     LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_3, LL_DMA_MDATAALIGN_BYTE);
 
     /* USARTx interrupt Init */
-    NVIC_SetPriority(IRQn, 1);
+    NVIC_SetPriority(IRQn, 3);
     NVIC_EnableIRQ(IRQn);
 
     /* Enable DMA transfer complete/error interrupts  */
@@ -194,13 +196,15 @@ static void check_idle() {
         panic();
 }
 
-void uart_start_tx(const void *data, uint32_t numbytes) {
+int uart_start_tx(const void *data, uint32_t numbytes) {
+    // DMESG("start TX %x %d", data, numbytes);
     check_idle();
 
-    // DMESG("start TX %x %d", data, numbytes);
-
     exti_disable(PIN_PIN);
-
+    if (LL_GPIO_IsInputPinSet(PIN_PORT, PIN_PIN) == 0) {
+        exti_enable(PIN_PIN);
+        return -1;
+    }
     LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
     wait_us(9);
@@ -226,6 +230,8 @@ void uart_start_tx(const void *data, uint32_t numbytes) {
     wait_us(57);
 
     LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_3);
+
+    return 0;
 }
 
 void uart_start_rx(void *data, uint32_t maxbytes) {
@@ -250,7 +256,7 @@ void uart_start_rx(void *data, uint32_t maxbytes) {
 
 // this is only enabled for error events
 void IRQHandler(void) {
-    //pulse_log_pin();
+    // pulse_log_pin();
     uint32_t dataLeft = LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_2);
     uart_disable();
     jd_rx_completed(dataLeft);

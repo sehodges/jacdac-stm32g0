@@ -60,11 +60,11 @@ void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback) {
     }
 
     if (!numcb) {
-        NVIC_SetPriority(EXTI0_1_IRQn, 3);
+        NVIC_SetPriority(EXTI0_1_IRQn, 0);
         NVIC_EnableIRQ(EXTI0_1_IRQn);
-        NVIC_SetPriority(EXTI2_3_IRQn, 3);
+        NVIC_SetPriority(EXTI2_3_IRQn, 0);
         NVIC_EnableIRQ(EXTI2_3_IRQn);
-        NVIC_SetPriority(EXTI4_15_IRQn, 3);
+        NVIC_SetPriority(EXTI4_15_IRQn, 0);
         NVIC_EnableIRQ(EXTI4_15_IRQn);
     }
 }

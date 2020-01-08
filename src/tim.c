@@ -27,6 +27,7 @@ void tim_set_timer(int delta, cb_t cb) {
         delta = 10;
     timer_cb = cb;
     LL_TIM_OC_SetCompareCH1(TIMx, TIMx->CNT + delta);
+    LL_TIM_ClearFlag_CC1(TIMx);
 }
 
 void tim_init() {
@@ -39,7 +40,7 @@ void tim_init() {
     /* Peripheral clock enable */
     LL_APB2_GRP1_EnableClock(TIMx_CLK);
 
-    NVIC_SetPriority(TIMx_IRQn, 0);
+    NVIC_SetPriority(TIMx_IRQn, 2);
     NVIC_EnableIRQ(TIMx_IRQn);
 
     TIM_InitStruct.Prescaler = tim_prescaler;
@@ -83,21 +84,14 @@ void TIMx_IRQHandler() {
         /* Clear the update interrupt flag */
         LL_TIM_ClearFlag_UPDATE(TIMx);
         timeoff += 0x10000;
-
-        //pulse_log_pin();
-        //pulse_log_pin();
     }
 
     if (LL_TIM_IsActiveFlag_CC1(TIMx) == 1) {
-        LL_TIM_ClearFlag_CC1(TIMx);
-
-        //pulse_log_pin();
-
         cb_t f = timer_cb;
-
-        tim_set_timer(10000, NULL);
-
-        if (f)
+        LL_TIM_ClearFlag_CC1(TIMx);
+        if (f) {
+            timer_cb = NULL;
             f();
+        }
     }
 }

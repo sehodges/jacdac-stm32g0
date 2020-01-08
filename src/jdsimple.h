@@ -16,6 +16,19 @@
 extern "C" {
 #endif
 
+#define JD_SERIAL_PAYLOAD_SIZE 255
+
+typedef struct {
+    uint16_t crc;
+    uint8_t size;
+    uint8_t service_number;
+    uint64_t device_identifier;
+} __attribute((__packed__)) jd_packet_header_t;
+
+typedef struct {
+    jd_packet_header_t header;
+    uint8_t data[JD_SERIAL_PAYLOAD_SIZE + 1];
+} __attribute((__packed__)) jd_packet_t;
 
 typedef void (*cb_t)(void);
 
@@ -34,6 +47,7 @@ int itoa(int n, char *s);
 int string_reverse(char *s);
 uint32_t random();
 uint32_t random_around(uint32_t v);
+uint64_t device_id();
 
 // exti.c
 void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback);
@@ -47,7 +61,7 @@ void tim_set_timer(int delta, cb_t cb);
 
 // uart.c
 void uart_init();
-void uart_start_tx(const void *data, uint32_t numbytes);
+int uart_start_tx(const void *data, uint32_t numbytes);
 void uart_start_rx(void *data, uint32_t maxbytes);
 void uart_disable();
 
@@ -59,6 +73,12 @@ void jd_init();
 void jd_tx_completed(int errCode);
 void jd_rx_completed(int dataLeft);
 void jd_line_falling();
+void jd_queue_packet(jd_packet_t *pkt);
+
+// jdapp.c
+void app_queue_annouce();
+void app_handle_packet(jd_packet_t *pkt);
+
 
 #ifdef __cplusplus
 }

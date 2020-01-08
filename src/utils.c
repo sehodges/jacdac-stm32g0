@@ -108,10 +108,14 @@ uint32_t device_id_hash() {
 }
 
 uint64_t device_id() {
-    // clear "universal" bit
-    uint32_t w0 = device_id_hash() & ~0x02000000;
-    uint32_t w1 = ((uint32_t *)UID_BASE)[2];
-    return (uint64_t)w0 << 32 | w1;
+    static uint64_t cache;
+    if (!cache) {
+        // clear "universal" bit
+        uint32_t w0 = device_id_hash() & ~0x02000000;
+        uint32_t w1 = ((uint32_t *)UID_BASE)[2];
+        cache = (uint64_t)w0 << 32 | w1;
+    }
+    return cache;
 }
 
 // need to seed from somewhere if no DevID, eg http://robseward.com/misc/RNG2/
