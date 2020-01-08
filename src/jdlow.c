@@ -8,13 +8,14 @@ static jd_packet_t rxBuffer;
 static void set_tick_timer();
 static uint64_t nextAnnounce;
 static volatile uint8_t status;
+static uint8_t numPending;
 
 static jd_packet_t *txQueue[TX_QUEUE_SIZE];
 
 void jd_init() {
     tim_init();
-    uart_init();
     set_tick_timer();
+    uart_init();
 }
 
 static void tx_done() {
@@ -23,8 +24,21 @@ static void tx_done() {
 }
 
 void jd_tx_completed(int errCode) {
-    DMESG("tx done: %d", errCode);
+    // DMESG("tx done: %d", errCode);
+    numPending--;
     tx_done();
+}
+
+uint32_t jd_get_num_pending_tx() {
+    return numPending;
+}
+
+uint32_t jd_get_free_queue_space() {
+    for (int i = TX_QUEUE_SIZE - 1; i >= 0; ++i) {
+        if (txQueue[i])
+            return TX_QUEUE_SIZE - i - 1;
+    }
+    return 0;
 }
 
 static void tick() {
@@ -47,10 +61,21 @@ static void flush_tx_queue() {
     if (status & (JD_STATUS_RX_ACTIVE | JD_STATUS_TX_ACTIVE))
         return;
 
+    // it's possible to have a race, with jd_line_falling() setting RX here
+
     status |= JD_STATUS_TX_ACTIVE;
+
+    if (status & JD_STATUS_RX_ACTIVE) {
+        // this protects against the race above
+        DMESG("also a race");
+        tx_done();
+        return;
+    }
+
     if (uart_start_tx(txQueue[0], txQueue[0]->header.size + sizeof(jd_packet_header_t)) < 0) {
         DMESG("race on TX");
         tx_done();
+        jd_line_falling();
         return;
     }
 
@@ -63,7 +88,7 @@ static void set_tick_timer() {
     target_disable_irq();
     if ((status & JD_STATUS_RX_ACTIVE) == 0) {
         if (txQueue[0] && !(status & JD_STATUS_TX_ACTIVE))
-            tim_set_timer(random_around(100), flush_tx_queue);
+            tim_set_timer(random_around(50), flush_tx_queue);
         else
             tim_set_timer(10000, tick);
     }
@@ -82,9 +107,14 @@ static void rx_timeout() {
 }
 
 void jd_line_falling() {
+    if (status & (JD_STATUS_RX_ACTIVE | JD_STATUS_TX_ACTIVE)) {
+        DMESG("stale EXTI?");
+        return;
+    }
     status |= JD_STATUS_RX_ACTIVE;
-    memset(&rxBuffer.header, 0, sizeof(rxBuffer.header));
     wait_us(15); // otherwise we can enable RX in the middle of LO pulse
+    // also, only clear the buffer after we have waited - gives some more time for processing
+    memset(&rxBuffer.header, 0, sizeof(rxBuffer.header));
     uart_start_rx(&rxBuffer, sizeof(rxBuffer));
     tim_set_timer(sizeof(rxBuffer) * 12 + 60, rx_timeout);
 }
@@ -109,6 +139,11 @@ void jd_rx_completed(int dataLeft) {
         return;
     }
 
+    if (crc == 0) {
+        DMESG("crc==0");
+        return;
+    }
+
     app_handle_packet(&rxBuffer);
 }
 
@@ -119,6 +154,8 @@ void jd_queue_packet(jd_packet_t *pkt) {
     if (txQueue[TX_QUEUE_SIZE - 1]) {
         // drop first packet
         shift_queue();
+    } else {
+        numPending++;
     }
 
     for (int i = 0; i < TX_QUEUE_SIZE; ++i) {
@@ -127,4 +164,6 @@ void jd_queue_packet(jd_packet_t *pkt) {
             break;
         }
     }
+
+    set_tick_timer();
 }

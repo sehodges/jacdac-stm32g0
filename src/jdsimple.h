@@ -23,12 +23,12 @@ typedef struct {
     uint8_t size;
     uint8_t service_number;
     uint64_t device_identifier;
-} __attribute((__packed__)) jd_packet_header_t;
+} __attribute((__packed__)) __attribute__ ((aligned (4))) jd_packet_header_t;
 
 typedef struct {
     jd_packet_header_t header;
     uint8_t data[JD_SERIAL_PAYLOAD_SIZE + 1];
-} __attribute((__packed__)) jd_packet_t;
+} jd_packet_t;
 
 typedef void (*cb_t)(void);
 
@@ -74,11 +74,13 @@ void jd_tx_completed(int errCode);
 void jd_rx_completed(int dataLeft);
 void jd_line_falling();
 void jd_queue_packet(jd_packet_t *pkt);
+uint32_t jd_get_num_pending_tx();
+uint32_t jd_get_free_queue_space();
 
 // jdapp.c
 void app_queue_annouce();
 void app_handle_packet(jd_packet_t *pkt);
-
+void app_process();
 
 #ifdef __cplusplus
 }

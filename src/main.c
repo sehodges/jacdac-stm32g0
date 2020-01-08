@@ -67,18 +67,13 @@ int main(void) {
     jd_init();
 
     uint32_t lastBlink = HAL_GetTick();
-    char buf[20];
-    strcpy(buf, "Hello world!");
-    int n = 0;
     while (1) {
         if (HAL_GetTick() - lastBlink > 300) {
             lastBlink = HAL_GetTick();
             led_toggle();
-            buf[12] = n++;
-            // uart_start_tx(buf, 13);
         }
 
-        // process_packets();
+        app_process();
     }
 }
 
@@ -86,6 +81,6 @@ void panic(void) {
     DMESG("PANIC!");
     while (1) {
         led_toggle();
-        HAL_Delay(100);
+        wait_us(100000);
     }
 }

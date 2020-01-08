@@ -129,7 +129,6 @@ static void USART_UART_Init(void) {
     LL_GPIO_SetPinSpeed(PIN_PORT, PIN_PIN, LL_GPIO_SPEED_FREQ_HIGH);
     LL_GPIO_SetPinOutputType(PIN_PORT, PIN_PIN, LL_GPIO_OUTPUT_PUSHPULL);
     uartOwnsPin(0);
-    exti_set_callback(PIN_PORT, PIN_PIN, jd_line_falling);
 
     /* USART_RX Init */
     LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_2, LL_DMAMUX_REQ_USARTx_RX);
@@ -180,6 +179,7 @@ static void USART_UART_Init(void) {
 
     // while (!(LL_USART_IsActiveFlag_REACK(USARTx)))
     //    ;
+    exti_set_callback(PIN_PORT, PIN_PIN, jd_line_falling);
 }
 
 void uart_init() {
@@ -188,10 +188,12 @@ void uart_init() {
 }
 
 static void check_idle() {
+    #if 0
     if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_3))
         panic();
     if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_2))
         panic();
+    #endif
     if (LL_USART_IsEnabled(USARTx))
         panic();
 }
@@ -235,6 +237,7 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
 }
 
 void uart_start_rx(void *data, uint32_t maxbytes) {
+    //DMESG("start rx");
     check_idle();
 
     exti_disable(PIN_PIN);
