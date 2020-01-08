@@ -33,13 +33,24 @@
 #define PIN_PORT GPIOB
 #define PIN_PIN LL_GPIO_PIN_6
 #define PIN_AF LL_GPIO_AF_0
+#define PIN_MODER (1 << 6 * 2)
 #elif USART_IDX == 2
 #define PIN_PORT GPIOA
 #define PIN_PIN LL_GPIO_PIN_2
 #define PIN_AF LL_GPIO_AF_1
+#define PIN_MODER (1 << 2 * 2)
 #else
+// generic
 #error "bad usart"
 #endif
+
+// This is extracted to a function to make sure the compiler doesn't
+// insert stuff between checking the input pin and setting the mode.
+// This results in a collision window of around 60ns
+__attribute__((noinline)) void gpio_probe_and_set(GPIO_TypeDef *gpio, uint32_t pin, uint32_t mode) {
+    if (gpio->IDR & pin)
+        gpio->MODER = mode;
+}
 
 static void uartOwnsPin(int doesIt) {
     if (doesIt) {
@@ -47,6 +58,7 @@ static void uartOwnsPin(int doesIt) {
         LL_GPIO_SetAFPin_0_7(PIN_PORT, PIN_PIN, PIN_AF);
     } else {
         LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_INPUT);
+        exti_clear(PIN_PIN);
         exti_enable(PIN_PIN);
     }
 }
@@ -58,9 +70,10 @@ void uart_disable() {
     LL_DMA_ClearFlag_GI3(DMA1);
     LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_3);
 
-    uartOwnsPin(0);
-    //pulse_log_pin();
     LL_USART_Disable(USARTx);
+
+    uartOwnsPin(0);
+    // pulse_log_pin();
 }
 
 void DMA1_Channel2_3_IRQHandler(void) {
@@ -189,27 +202,42 @@ void uart_init() {
 }
 
 static void check_idle() {
-    #if 0
+#if 0
     if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_3))
         panic();
     if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_2))
         panic();
-    #endif
+#endif
     if (LL_USART_IsEnabled(USARTx))
         panic();
 }
 
-int uart_start_tx(const void *data, uint32_t numbytes) {
-    // DMESG("start TX %x %d", data, numbytes);
-    check_idle();
+void uart_wait_high() {
+    while (!LL_GPIO_IsInputPinSet(PIN_PORT, PIN_PIN))
+        ;
+}
 
+int uart_start_tx(const void *data, uint32_t numbytes) {
     exti_disable(PIN_PIN);
-    if (LL_GPIO_IsInputPinSet(PIN_PORT, PIN_PIN) == 0) {
-    //    exti_enable(PIN_PIN);
+    exti_clear(PIN_PIN);
+    // We assume EXTI runs at higher priority than us
+    // If we got hit by EXTI, before we managed to disable it,
+    // the reception routine would have enabled UART in RX mode
+    if (LL_USART_IsEnabled(USARTx)) {
+        // TX should never be already enabled though
+        if (USARTx->CR1 & USART_CR1_TE)
+            panic();
+        // we don't re-enable EXTI - the RX complete will do it
         return -1;
     }
-    LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_OUTPUT);
     LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
+    gpio_probe_and_set(PIN_PORT, PIN_PIN, PIN_MODER | PIN_PORT->MODER);
+    if (!(PIN_PORT->MODER & PIN_MODER)) {
+        set_log_pin5(1);
+        set_log_pin5(0);
+        exti_trigger(jd_line_falling);
+        return -1;
+    }
     wait_us(9);
     LL_GPIO_SetOutputPin(PIN_PORT, PIN_PIN);
 
@@ -238,10 +266,11 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
 }
 
 void uart_start_rx(void *data, uint32_t maxbytes) {
-    //DMESG("start rx");
+    // DMESG("start rx");
     check_idle();
 
     exti_disable(PIN_PIN);
+    exti_clear(PIN_PIN);
 
     uartOwnsPin(1);
     LL_USART_DisableDirectionTx(USARTx);
@@ -260,7 +289,7 @@ void uart_start_rx(void *data, uint32_t maxbytes) {
 
 // this is only enabled for error events
 void IRQHandler(void) {
-    //pulse_log_pin();
+  //  pulse_log_pin();
     uint32_t dataLeft = LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_2);
     uart_disable();
     jd_rx_completed(dataLeft);
