@@ -33,6 +33,12 @@
 #error "bad usart"
 #endif
 
+#define DMA_IRQn DMA1_Ch4_5_DMAMUX1_OVR_IRQn
+#define DMA_Handler DMA1_Ch4_5_DMAMUX1_OVR_IRQHandler
+
+// DMA Channel 4 - TX
+// DMA Channel 5 - RX
+
 // This is extracted to a function to make sure the compiler doesn't
 // insert stuff between checking the input pin and setting the mode.
 // This results in a collision window of around 90ns
@@ -53,11 +59,11 @@ static void uartOwnsPin(int doesIt) {
 }
 
 void uart_disable() {
-    LL_DMA_ClearFlag_GI2(DMA1);
-    LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_2);
+    LL_DMA_ClearFlag_GI5(DMA1);
+    LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_5);
 
-    LL_DMA_ClearFlag_GI3(DMA1);
-    LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_3);
+    LL_DMA_ClearFlag_GI4(DMA1);
+    LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_4);
 
     LL_USART_Disable(USARTx);
 
@@ -65,14 +71,14 @@ void uart_disable() {
     // pulse_log_pin();
 }
 
-void DMA1_Channel2_3_IRQHandler(void) {
+void DMA_Handler(void) {
     uint32_t isr = DMA1->ISR;
 
     // DMESG("DMA irq %x", isr);
 
-    if (isr & (DMA_ISR_TCIF2 | DMA_ISR_TEIF2)) {
+    if (isr & (DMA_ISR_TCIF5 | DMA_ISR_TEIF5)) {
         uart_disable();
-        if (isr & DMA_ISR_TCIF2) {
+        if (isr & DMA_ISR_TCIF5) {
             // overrun?
             DMESG("USARTx RX OK, but how?!");
             jd_rx_completed(-1);
@@ -82,12 +88,12 @@ void DMA1_Channel2_3_IRQHandler(void) {
         }
     }
 
-    if (isr & (DMA_ISR_TCIF3 | DMA_ISR_TEIF3)) {
-        LL_DMA_ClearFlag_GI3(DMA1);
-        LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_3);
+    if (isr & (DMA_ISR_TCIF4 | DMA_ISR_TEIF4)) {
+        LL_DMA_ClearFlag_GI4(DMA1);
+        LL_DMA_DisableChannel(DMA1, LL_DMA_CHANNEL_4);
 
         int errCode = 0;
-        if (isr & DMA_ISR_TCIF3) {
+        if (isr & DMA_ISR_TCIF4) {
             while (!LL_USART_IsActiveFlag_TC(USARTx))
                 ;
             LL_USART_RequestBreakSending(USARTx);
@@ -106,13 +112,10 @@ void DMA1_Channel2_3_IRQHandler(void) {
 }
 
 static void DMA_Init(void) {
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
+    __HAL_RCC_DMA1_CLK_ENABLE();
 
-    // NVIC_SetPriority(DMA1_Channel1_IRQn, 0);
-    // NVIC_EnableIRQ(DMA1_Channel1_IRQn);
-
-    NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0);
-    NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
+    NVIC_SetPriority(DMA_IRQn, 0);
+    NVIC_EnableIRQ(DMA_IRQn);
 }
 
 static void USART_UART_Init(void) {
@@ -134,34 +137,34 @@ static void USART_UART_Init(void) {
     uartOwnsPin(0);
 
     /* USART_RX Init */
-    LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_2, LL_DMAMUX_REQ_USARTx_RX);
-    LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_CHANNEL_2, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
-    LL_DMA_SetChannelPriorityLevel(DMA1, LL_DMA_CHANNEL_2, LL_DMA_PRIORITY_HIGH);
-    LL_DMA_SetMode(DMA1, LL_DMA_CHANNEL_2, LL_DMA_MODE_NORMAL);
-    LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_CHANNEL_2, LL_DMA_PERIPH_NOINCREMENT);
-    LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_CHANNEL_2, LL_DMA_MEMORY_INCREMENT);
-    LL_DMA_SetPeriphSize(DMA1, LL_DMA_CHANNEL_2, LL_DMA_PDATAALIGN_BYTE);
-    LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_2, LL_DMA_MDATAALIGN_BYTE);
+    LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_5, LL_DMAMUX_REQ_USARTx_RX);
+    LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_CHANNEL_5, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
+    LL_DMA_SetChannelPriorityLevel(DMA1, LL_DMA_CHANNEL_5, LL_DMA_PRIORITY_HIGH);
+    LL_DMA_SetMode(DMA1, LL_DMA_CHANNEL_5, LL_DMA_MODE_NORMAL);
+    LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_CHANNEL_5, LL_DMA_PERIPH_NOINCREMENT);
+    LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_CHANNEL_5, LL_DMA_MEMORY_INCREMENT);
+    LL_DMA_SetPeriphSize(DMA1, LL_DMA_CHANNEL_5, LL_DMA_PDATAALIGN_BYTE);
+    LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_5, LL_DMA_MDATAALIGN_BYTE);
 
     /* USART_TX Init */
-    LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_3, LL_DMAMUX_REQ_USARTx_TX);
-    LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_CHANNEL_3, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
-    LL_DMA_SetChannelPriorityLevel(DMA1, LL_DMA_CHANNEL_3, LL_DMA_PRIORITY_HIGH);
-    LL_DMA_SetMode(DMA1, LL_DMA_CHANNEL_3, LL_DMA_MODE_NORMAL);
-    LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_CHANNEL_3, LL_DMA_PERIPH_NOINCREMENT);
-    LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_CHANNEL_3, LL_DMA_MEMORY_INCREMENT);
-    LL_DMA_SetPeriphSize(DMA1, LL_DMA_CHANNEL_3, LL_DMA_PDATAALIGN_BYTE);
-    LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_3, LL_DMA_MDATAALIGN_BYTE);
+    LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_4, LL_DMAMUX_REQ_USARTx_TX);
+    LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_CHANNEL_4, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
+    LL_DMA_SetChannelPriorityLevel(DMA1, LL_DMA_CHANNEL_4, LL_DMA_PRIORITY_HIGH);
+    LL_DMA_SetMode(DMA1, LL_DMA_CHANNEL_4, LL_DMA_MODE_NORMAL);
+    LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_CHANNEL_4, LL_DMA_PERIPH_NOINCREMENT);
+    LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_CHANNEL_4, LL_DMA_MEMORY_INCREMENT);
+    LL_DMA_SetPeriphSize(DMA1, LL_DMA_CHANNEL_4, LL_DMA_PDATAALIGN_BYTE);
+    LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_4, LL_DMA_MDATAALIGN_BYTE);
 
     /* USARTx interrupt Init */
     NVIC_SetPriority(IRQn, 0);
     NVIC_EnableIRQ(IRQn);
 
     /* Enable DMA transfer complete/error interrupts  */
-    LL_DMA_EnableIT_TC(DMA1, LL_DMA_CHANNEL_3);
-    LL_DMA_EnableIT_TE(DMA1, LL_DMA_CHANNEL_3);
-    LL_DMA_EnableIT_TC(DMA1, LL_DMA_CHANNEL_2);
-    LL_DMA_EnableIT_TE(DMA1, LL_DMA_CHANNEL_2);
+    LL_DMA_EnableIT_TC(DMA1, LL_DMA_CHANNEL_4);
+    LL_DMA_EnableIT_TE(DMA1, LL_DMA_CHANNEL_4);
+    LL_DMA_EnableIT_TC(DMA1, LL_DMA_CHANNEL_5);
+    LL_DMA_EnableIT_TE(DMA1, LL_DMA_CHANNEL_5);
 
 #ifdef LL_USART_PRESCALER_DIV1
     USART_InitStruct.PrescalerValue = LL_USART_PRESCALER_DIV1;
@@ -196,9 +199,9 @@ void uart_init() {
 
 static void check_idle() {
 #if 0
-    if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_3))
+    if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_4))
         panic();
-    if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_2))
+    if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_5))
         panic();
 #endif
     if (LL_USART_IsEnabled(USARTx))
@@ -243,9 +246,9 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
     while (!(LL_USART_IsActiveFlag_TEACK(USARTx)))
         ;
 
-    LL_DMA_ConfigAddresses(DMA1, LL_DMA_CHANNEL_3, (uint32_t)data, (uint32_t) & (USARTx->TDR),
+    LL_DMA_ConfigAddresses(DMA1, LL_DMA_CHANNEL_4, (uint32_t)data, (uint32_t) & (USARTx->TDR),
                            LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
-    LL_DMA_SetDataLength(DMA1, LL_DMA_CHANNEL_3, numbytes);
+    LL_DMA_SetDataLength(DMA1, LL_DMA_CHANNEL_4, numbytes);
     LL_USART_EnableDMAReq_TX(USARTx);
     // to here, it's about 1.3us
 
@@ -253,7 +256,7 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
     // this value gives 60us from the end of low pulse to start bit
     wait_us(57);
 
-    LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_3);
+    LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_4);
 
     return 0;
 }
@@ -273,17 +276,17 @@ void uart_start_rx(void *data, uint32_t maxbytes) {
     while (!(LL_USART_IsActiveFlag_REACK(USARTx)))
         ;
 
-    LL_DMA_ConfigAddresses(DMA1, LL_DMA_CHANNEL_2, (uint32_t) & (USARTx->RDR), (uint32_t)data,
+    LL_DMA_ConfigAddresses(DMA1, LL_DMA_CHANNEL_5, (uint32_t) & (USARTx->RDR), (uint32_t)data,
                            LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
-    LL_DMA_SetDataLength(DMA1, LL_DMA_CHANNEL_2, maxbytes);
+    LL_DMA_SetDataLength(DMA1, LL_DMA_CHANNEL_5, maxbytes);
     LL_USART_EnableDMAReq_RX(USARTx);
-    LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_2);
+    LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_5);
 }
 
 // this is only enabled for error events
 void IRQHandler(void) {
     //  pulse_log_pin();
-    uint32_t dataLeft = LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_2);
+    uint32_t dataLeft = LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_5);
     uart_disable();
     jd_rx_completed(dataLeft);
 }

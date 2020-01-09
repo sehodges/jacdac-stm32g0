@@ -40,7 +40,7 @@ LDFLAGS = -specs=nosys.specs -specs=nano.specs \
 	-T"$(LD_SCRIPT)" -Wl,-Map=$(BUILT)/output.map -Wl,--gc-sections
 
 all:
-	$(MAKE)  $(BUILT)/binary.hex
+	$(MAKE) -j8 $(BUILT)/binary.hex
 
 r: run
 
