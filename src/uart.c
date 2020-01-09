@@ -33,8 +33,13 @@
 #error "bad usart"
 #endif
 
+#ifdef STM32G0
 #define DMA_IRQn DMA1_Ch4_5_DMAMUX1_OVR_IRQn
 #define DMA_Handler DMA1_Ch4_5_DMAMUX1_OVR_IRQHandler
+#else
+#define DMA_IRQn DMA1_Channel4_5_IRQn
+#define DMA_Handler DMA1_Channel4_5_IRQHandler
+#endif
 
 // DMA Channel 4 - TX
 // DMA Channel 5 - RX
@@ -136,8 +141,14 @@ static void USART_UART_Init(void) {
     LL_GPIO_SetPinOutputType(PIN_PORT, PIN_PIN, LL_GPIO_OUTPUT_PUSHPULL);
     uartOwnsPin(0);
 
+#ifdef STM32F0
+    LL_SYSCFG_SetRemapDMA_USART(LL_SYSCFG_USART1TX_RMP_DMA1CH4 | LL_SYSCFG_USART1RX_RMP_DMA1CH5);
+#endif
+
     /* USART_RX Init */
+#ifdef STM32G0
     LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_5, LL_DMAMUX_REQ_USARTx_RX);
+#endif
     LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_CHANNEL_5, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
     LL_DMA_SetChannelPriorityLevel(DMA1, LL_DMA_CHANNEL_5, LL_DMA_PRIORITY_HIGH);
     LL_DMA_SetMode(DMA1, LL_DMA_CHANNEL_5, LL_DMA_MODE_NORMAL);
@@ -147,7 +158,9 @@ static void USART_UART_Init(void) {
     LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_5, LL_DMA_MDATAALIGN_BYTE);
 
     /* USART_TX Init */
+#ifdef STM32G0
     LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_4, LL_DMAMUX_REQ_USARTx_TX);
+#endif
     LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_CHANNEL_4, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
     LL_DMA_SetChannelPriorityLevel(DMA1, LL_DMA_CHANNEL_4, LL_DMA_PRIORITY_HIGH);
     LL_DMA_SetMode(DMA1, LL_DMA_CHANNEL_4, LL_DMA_MODE_NORMAL);
