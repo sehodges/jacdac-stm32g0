@@ -1,3 +1,7 @@
+SERIES = G0
+DEFINES += -DSTM32G031xx
+CFLAGS += -mcpu=cortex-m0plus
+
 HALPREF = $(DRV)/STM32G0xx_HAL_Driver/Src/
 HALSRC =  \
 $(HALPREF)/stm32g0xx_hal.c \

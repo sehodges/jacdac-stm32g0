@@ -1,34 +1,38 @@
 PREFIX = arm-none-eabi-
 CC = $(PREFIX)gcc
 AS = $(PREFIX)as
-CUBE = STM32CubeG0
+
+TARGET = g031
+
+CUBE = STM32Cube$(SERIES)
 DRV = $(CUBE)/Drivers
-DEFINES = -DUSE_HAL_DRIVER -DSTM32G031xx -DUSE_FULL_ASSERT -DUSE_FULL_LL_DRIVER
+DEFINES = -DUSE_HAL_DRIVER -DUSE_FULL_ASSERT -DUSE_FULL_LL_DRIVER
 WARNFLAGS = -Wall -Werror
 CFLAGS = $(DEFINES) \
-	-mcpu=cortex-m0plus -mthumb -mfloat-abi=soft  \
+	-mthumb -mfloat-abi=soft  \
 	-Os -g3 -Wall -ffunction-sections \
 	$(WARNFLAGS)
 BUILT = built
 HEADERS = $(wildcard src/*.h)
-TEMPLATE = $(CUBE)/Projects/NUCLEO-G031K8/Templates
-include toolkit/halsrc.mk
+
+include targets/$(TARGET)/config.mk
+
 C_SRC += $(wildcard src/*.c) 
 C_SRC += $(HALSRC)
-C_SRC += toolkit/system_stm32g0xx.c
-AS_SRC = toolkit/startup_stm32g031xx.s
+
+C_SRC += targets/$(TARGET)/system.c
+AS_SRC = targets/$(TARGET)/startup.s
+LD_SCRIPT = targets/$(TARGET)/toolkit/linker.ld
 
 V = @
 
-LD_SCRIPT = toolkit/STM32G031K8Tx_FLASH.ld
 OBJ = $(addprefix $(BUILT)/,$(C_SRC:.c=.o) $(AS_SRC:.s=.o))
 
 CPPFLAGS = \
-	-I$(DRV)/STM32G0xx_HAL_Driver/Inc \
-	-I$(DRV)/STM32G0xx_HAL_Driver/Inc/Legacy \
-	-I$(DRV)/CMSIS/Device/ST/STM32G0xx/Include \
+	-I$(DRV)/STM32$(SERIES)xx_HAL_Driver/Inc \
+	-I$(DRV)/STM32$(SERIES)xx_HAL_Driver/Inc/Legacy \
+	-I$(DRV)/CMSIS/Device/ST/STM32$(SERIES)xx/Include \
 	-I$(DRV)/CMSIS/Include \
-	-I$(DRV)/BSP/STM32G0xx_Nucleo_32 \
 	-Isrc
 
 LDFLAGS = -specs=nosys.specs -specs=nano.specs \
