@@ -73,7 +73,7 @@ static void flush_tx_queue() {
 
     set_log_pin3(1);
     if (uart_start_tx(txQueue[0], txQueue[0]->header.size + sizeof(jd_packet_header_t)) < 0) {
-        DMESG("race on TX");
+        // DMESG("race on TX");
         tx_done();
         return;
     }
@@ -111,7 +111,7 @@ void jd_line_falling() {
      pulse_log_pin();
     set_log_pin4(1);
     numFalls++;
-    DMESG("fall %d", numFalls);
+    // DMESG("fall %d", numFalls);
     // target_disable_irq();
     if (status & JD_STATUS_RX_ACTIVE)
         panic();

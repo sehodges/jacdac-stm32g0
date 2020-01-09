@@ -35,19 +35,20 @@ void app_process() {
 }
 
 static uint32_t prevCnt;
-uint32_t numErrors;
+uint32_t numErrors, numPkts;
 void app_handle_packet(jd_packet_t *pkt) {
-    DMESG("handle pkt; dst=%x/%d sz=%d", (uint32_t)pkt->header.device_identifier,
-          pkt->header.service_number, pkt->header.size);
+    //DMESG("handle pkt; dst=%x/%d sz=%d", (uint32_t)pkt->header.device_identifier,
+    //      pkt->header.service_number, pkt->header.size);
 
+    numPkts++;
     if (pkt->header.service_number == 1) {
         count_service_pkt_t *cs = (count_service_pkt_t *)pkt;
         uint32_t c = cs->count;
         if (prevCnt && prevCnt + 1 != c) {
             set_log_pin2(1);
             set_log_pin2(0);
-            DMESG("ERR");
             numErrors++;
+            DMESG("ERR %d/%d %d", numErrors, numPkts, numErrors * 10000 / numPkts);
         }
         prevCnt = c;
     }
