@@ -1,5 +1,4 @@
 #include "jdsimple.h"
-#include "stm32g0xx_ll_exti.h"
 
 static cb_t callbacks[16];
 static cb_t trigger_cb;

@@ -1,5 +1,4 @@
-#include "stm32g0xx_ll_crc.h"
-#include "stm32g0xx_ll_bus.h"
+#include "stm.h"
 
 static uint8_t inited;
 

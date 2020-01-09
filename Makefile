@@ -22,7 +22,7 @@ C_SRC += $(HALSRC)
 
 C_SRC += targets/$(TARGET)/system.c
 AS_SRC = targets/$(TARGET)/startup.s
-LD_SCRIPT = targets/$(TARGET)/toolkit/linker.ld
+LD_SCRIPT = targets/$(TARGET)/linker.ld
 
 V = @
 
@@ -33,6 +33,7 @@ CPPFLAGS = \
 	-I$(DRV)/STM32$(SERIES)xx_HAL_Driver/Inc/Legacy \
 	-I$(DRV)/CMSIS/Device/ST/STM32$(SERIES)xx/Include \
 	-I$(DRV)/CMSIS/Include \
+	-Itargets/$(TARGET) \
 	-Isrc
 
 LDFLAGS = -specs=nosys.specs -specs=nano.specs \

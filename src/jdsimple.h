@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "stm32g0xx_ll_gpio.h"
+#include "stm.h"
 
 #include "dmesg.h"
 
