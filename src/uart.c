@@ -1,6 +1,5 @@
 #include "jdsimple.h"
 
-
 #define USART_IDX 1
 
 #if USART_IDX == 1
@@ -120,11 +119,11 @@ static void USART_UART_Init(void) {
     LL_USART_InitTypeDef USART_InitStruct = {0};
 
 #if USART_IDX == 2
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
-    LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA);
+    __HAL_RCC_USART2_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
 #elif USART_IDX == 1
-    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART1);
-    LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOB);
+    __HAL_RCC_USART1_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
 #else
 #error "bad usart"
 #endif
@@ -164,7 +163,9 @@ static void USART_UART_Init(void) {
     LL_DMA_EnableIT_TC(DMA1, LL_DMA_CHANNEL_2);
     LL_DMA_EnableIT_TE(DMA1, LL_DMA_CHANNEL_2);
 
+#ifdef LL_USART_PRESCALER_DIV1
     USART_InitStruct.PrescalerValue = LL_USART_PRESCALER_DIV1;
+#endif
     USART_InitStruct.BaudRate = 1000000;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
@@ -174,9 +175,11 @@ static void USART_UART_Init(void) {
     USART_InitStruct.OverSampling = LL_USART_OVERSAMPLING_16;
     LL_USART_Init(USARTx, &USART_InitStruct);
 
+#ifdef LL_USART_FIFOTHRESHOLD_1_8
     LL_USART_SetTXFIFOThreshold(USARTx, LL_USART_FIFOTHRESHOLD_1_8);
     LL_USART_SetRXFIFOThreshold(USARTx, LL_USART_FIFOTHRESHOLD_1_8);
     LL_USART_DisableFIFO(USARTx);
+#endif
     LL_USART_ConfigHalfDuplexMode(USARTx);
     LL_USART_EnableIT_ERROR(USARTx);
     // LL_USART_EnableDMADeactOnRxErr(USARTx);
@@ -279,7 +282,7 @@ void uart_start_rx(void *data, uint32_t maxbytes) {
 
 // this is only enabled for error events
 void IRQHandler(void) {
-  //  pulse_log_pin();
+    //  pulse_log_pin();
     uint32_t dataLeft = LL_DMA_GetDataLength(DMA1, LL_DMA_CHANNEL_2);
     uart_disable();
     jd_rx_completed(dataLeft);

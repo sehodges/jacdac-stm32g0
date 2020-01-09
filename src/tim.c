@@ -1,12 +1,9 @@
 #include "jdsimple.h"
-#include "stm32g0xx_ll_tim.h"
-#include "stm32g0xx_ll_bus.h"
-#include "stm32g0xx_ll_utils.h"
 
 #define TIMx TIM17
 #define TIMx_IRQn TIM17_IRQn
 #define TIMx_IRQHandler TIM17_IRQHandler
-#define TIMx_CLK LL_APB2_GRP1_PERIPH_TIM17
+#define TIMx_CLK_EN() __HAL_RCC_TIM17_CLK_ENABLE()
 
 static volatile uint64_t timeoff;
 
@@ -42,7 +39,7 @@ void tim_init() {
     LL_TIM_InitTypeDef TIM_InitStruct = {0};
 
     /* Peripheral clock enable */
-    LL_APB2_GRP1_EnableClock(TIMx_CLK);
+    TIMx_CLK_EN();
 
     NVIC_SetPriority(TIMx_IRQn, 2);
     NVIC_EnableIRQ(TIMx_IRQn);
@@ -56,7 +53,9 @@ void tim_init() {
     LL_TIM_DisableARRPreload(TIMx);
     LL_TIM_SetClockSource(TIMx, LL_TIM_CLOCKSOURCE_INTERNAL);
     LL_TIM_SetTriggerOutput(TIMx, LL_TIM_TRGO_RESET);
+#ifdef STM32G0
     LL_TIM_SetTriggerOutput2(TIMx, LL_TIM_TRGO2_RESET);
+#endif
     LL_TIM_DisableMasterSlaveMode(TIMx);
 
     LL_TIM_ClearFlag_UPDATE(TIMx);

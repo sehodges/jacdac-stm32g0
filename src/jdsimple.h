@@ -75,7 +75,6 @@ void uart_wait_high();
 
 // crc.c
 uint16_t crc16(const void *data, uint32_t size);
-uint16_t crc16soft(const void *data, uint32_t size);
 
 // jdlow.c
 void jd_init();

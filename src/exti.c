@@ -37,6 +37,12 @@ void exti_trigger(cb_t cb) {
     // LL_EXTI_GenerateSWI_0_31(1);
 }
 
+#ifdef STM32F0
+#define LL_EXTI_CONFIG_PORTA 0
+#define LL_EXTI_CONFIG_PORTB 1
+#define LL_EXTI_CONFIG_PORTC 2
+#endif
+
 void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback) {
     uint32_t extiport = 0;
 
@@ -54,9 +60,14 @@ void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback) {
         if (callbacks[pos])
             numcb++;
         if (pin & (1 << pos)) {
+#ifdef STM32F0
+            uint32_t line = (pos >> 2) | ((pos & 3) << 18);
+            LL_SYSCFG_SetEXTISource(extiport, line);
+#else
             uint32_t line = (pos >> 2) | ((pos & 3) << 19);
             LL_EXTI_SetEXTISource(extiport, line);
-            LL_EXTI_EnableIT_0_31(1 << pos);
+#endif
+                LL_EXTI_EnableIT_0_31(1 << pos);
             LL_EXTI_EnableFallingTrig_0_31(1 << pos);
             callbacks[pos] = callback;
         }

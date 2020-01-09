@@ -1,5 +1,5 @@
 SERIES = F0
-DEFINES += -DSTM32F031xx
+DEFINES += -DSTM32F031x6
 CFLAGS += -mcpu=cortex-m0
 
 HALPREF = $(DRV)/STM32F0xx_HAL_Driver/Src/

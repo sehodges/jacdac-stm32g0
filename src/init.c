@@ -23,6 +23,7 @@ void SysTick_Handler(void) {
 }
 
 static void enable_nrst_pin() {
+#ifdef STM32G0
     DMESG("check NRST", FLASH->OPTR & FLASH_OPTR_NRST_MODE);
 
     if (FLASH->OPTR & FLASH_OPTR_NRST_MODE_0)
@@ -62,9 +63,11 @@ static void enable_nrst_pin() {
 
     while (1)
         ;
+#endif
 }
 
 void SystemClock_Config(void) {
+#ifdef STM32G0
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
     RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
@@ -94,6 +97,9 @@ void SystemClock_Config(void) {
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK) {
         panic();
     }
+#else
+// #warning TODO
+#endif
 
     enable_nrst_pin();
 }

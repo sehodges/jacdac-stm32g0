@@ -1,5 +1,4 @@
 #include "jdsimple.h"
-#include "stm32g0xx_hal.h"
 
 void SystemClock_Config(void);
 
@@ -9,7 +8,7 @@ void led_init() {
     GPIO_InitStructure.Pin = GPIO_PIN_6;
     GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStructure.Pull = GPIO_NOPULL;
-    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_HIGH;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStructure);
 
     HAL_GPIO_WritePin(GPIOC, GPIO_InitStructure.Pin, GPIO_PIN_RESET);

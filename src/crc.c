@@ -1,7 +1,5 @@
 #include "stm.h"
 
-static uint8_t inited;
-
 /*
 Timings, for 256 byte packet, 64MHz STM32G031:
   Hardware: 40us
@@ -9,6 +7,8 @@ Timings, for 256 byte packet, 64MHz STM32G031:
   Software slow: 388us
 */
 
+#if defined(CRC_POL_POL)
+static uint8_t inited;
 uint16_t crc16(const void *data, uint32_t size) {
     if (!inited) {
         LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_CRC);
@@ -25,7 +25,9 @@ uint16_t crc16(const void *data, uint32_t size) {
         LL_CRC_FeedData8(CRC, *ptr++);
     return LL_CRC_ReadData16(CRC);
 }
+#else
 
+#if 0
 uint16_t crc16soft_slow(const void *data, uint32_t size) {
     const uint8_t *ptr = (const uint8_t *)data;
     uint16_t crc = 0xffff;
@@ -41,9 +43,10 @@ uint16_t crc16soft_slow(const void *data, uint32_t size) {
     }
     return crc;
 }
+#endif
 
 // https://wiki.nicksoft.info/mcu:pic16:crc-16:home
-uint16_t crc16soft(const void *data, uint32_t size) {
+uint16_t crc16(const void *data, uint32_t size) {
     const uint8_t *ptr = (const uint8_t *)data;
     uint16_t crc = 0xffff;
     while (size--) {
@@ -54,3 +57,4 @@ uint16_t crc16soft(const void *data, uint32_t size) {
     }
     return crc;
 }
+#endif
