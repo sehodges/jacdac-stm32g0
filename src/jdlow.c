@@ -4,7 +4,8 @@
 #define JD_STATUS_TX_ACTIVE 0x02
 #define TX_QUEUE_SIZE 3
 
-static jd_packet_t rxBuffer;
+static jd_packet_t _rxBuffer[2];
+static jd_packet_t *rxPkt = &_rxBuffer[0];
 static void set_tick_timer(uint8_t statusClear);
 static uint64_t nextAnnounce;
 static volatile uint8_t status;
@@ -108,7 +109,7 @@ static void rx_timeout() {
 }
 
 void jd_line_falling() {
-     pulse_log_pin();
+    pulse_log_pin();
     set_log_pin4(1);
     numFalls++;
     // DMESG("fall %d", numFalls);
@@ -117,19 +118,26 @@ void jd_line_falling() {
         panic();
     status |= JD_STATUS_RX_ACTIVE;
 
-    memset(&rxBuffer.header, 0, sizeof(rxBuffer.header));
+    memset(&rxPkt->header, 0, sizeof(rxPkt->header));
 
     // otherwise we can enable RX in the middle of LO pulse
     uart_wait_high();
     wait_us(2);
 
-    uart_start_rx(&rxBuffer, sizeof(rxBuffer));
+    uart_start_rx(rxPkt, sizeof(*rxPkt));
 
-    tim_set_timer(sizeof(rxBuffer) * 12 + 60, rx_timeout);
+    tim_set_timer(sizeof(*rxPkt) * 12 + 60, rx_timeout);
     // target_enable_irq();
 }
 
 void jd_rx_completed(int dataLeft) {
+    jd_packet_t *pkt = rxPkt;
+
+    if (rxPkt == &_rxBuffer[0])
+        rxPkt = &_rxBuffer[1];
+    else
+        rxPkt = &_rxBuffer[0];
+
     set_log_pin4(0);
     set_tick_timer(JD_STATUS_RX_ACTIVE);
 
@@ -138,14 +146,14 @@ void jd_rx_completed(int dataLeft) {
         return;
     }
 
-    uint32_t txSize = sizeof(rxBuffer) - dataLeft;
-    uint32_t declaredSize = rxBuffer.header.size + sizeof(jd_packet_header_t);
+    uint32_t txSize = sizeof(*pkt) - dataLeft;
+    uint32_t declaredSize = pkt->header.size + sizeof(jd_packet_header_t);
     if (txSize < declaredSize) {
         DMESG("pkt too short");
         return;
     }
-    uint16_t crc = crc16((uint8_t *)&rxBuffer + 2, declaredSize - 2);
-    if (crc != rxBuffer.header.crc) {
+    uint16_t crc = crc16((uint8_t *)pkt + 2, declaredSize - 2);
+    if (crc != pkt->header.crc) {
         DMESG("crc mismatch");
         return;
     }
@@ -157,7 +165,7 @@ void jd_rx_completed(int dataLeft) {
 
     numOKPkts++;
 
-    app_handle_packet(&rxBuffer);
+    app_handle_packet(pkt);
 }
 
 void jd_queue_packet(jd_packet_t *pkt) {
