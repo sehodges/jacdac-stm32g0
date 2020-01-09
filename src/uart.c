@@ -46,7 +46,7 @@
 
 // This is extracted to a function to make sure the compiler doesn't
 // insert stuff between checking the input pin and setting the mode.
-// This results in a collision window of around 60ns
+// This results in a collision window of around 90ns
 __attribute__((noinline)) void gpio_probe_and_set(GPIO_TypeDef *gpio, uint32_t pin, uint32_t mode) {
     if (gpio->IDR & pin)
         gpio->MODER = mode;
