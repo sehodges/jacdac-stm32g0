@@ -12,7 +12,7 @@ CFLAGS = $(DEFINES) \
 	-mthumb -mfloat-abi=soft  \
 	-Os -g3 -Wall -ffunction-sections \
 	$(WARNFLAGS)
-BUILT = built
+BUILT = built/$(TARGET)
 HEADERS = $(wildcard src/*.h)
 
 include targets/$(TARGET)/config.mk
@@ -41,6 +41,10 @@ LDFLAGS = -specs=nosys.specs -specs=nano.specs \
 
 all:
 	$(MAKE) -j8 $(BUILT)/binary.hex
+
+drop:
+	$(MAKE) TARGET=g031 all
+	$(MAKE) TARGET=f031 all
 
 r: run
 
