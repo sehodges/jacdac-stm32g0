@@ -15,6 +15,8 @@ CFLAGS = $(DEFINES) \
 BUILT = built/$(TARGET)
 HEADERS = $(wildcard src/*.h)
 
+OPENOCD = ./scripts/openocd -s ./scripts -f stlink-v2-1.cfg -f stm32g0x.cfg
+
 include targets/$(TARGET)/config.mk
 
 C_SRC += $(wildcard src/*.c) 
@@ -49,10 +51,11 @@ drop:
 r: run
 
 run: all
-	./scripts/flash.sh
+	$(OPENOCD) -c "program $(BUILT)/binary.elf verify reset exit"
 
 gdb:
-	./scripts/bmp.sh > built/debug.gdb
+	echo "file $(BUILT)/binary.elf" > built/debug.gdb
+	echo "target extended-remote | $(OPENOCD) -f gdbdebug.cfg" >> built/debug.gdb
 	arm-none-eabi-gdb --command=built/debug.gdb
 
 $(BUILT)/%.o: %.c
