@@ -149,25 +149,27 @@ static void USART_UART_Init(void) {
 #ifdef STM32G0
     LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_5, LL_DMAMUX_REQ_USARTx_RX);
 #endif
-    LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_CHANNEL_5, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
-    LL_DMA_SetChannelPriorityLevel(DMA1, LL_DMA_CHANNEL_5, LL_DMA_PRIORITY_HIGH);
-    LL_DMA_SetMode(DMA1, LL_DMA_CHANNEL_5, LL_DMA_MODE_NORMAL);
-    LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_CHANNEL_5, LL_DMA_PERIPH_NOINCREMENT);
-    LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_CHANNEL_5, LL_DMA_MEMORY_INCREMENT);
-    LL_DMA_SetPeriphSize(DMA1, LL_DMA_CHANNEL_5, LL_DMA_PDATAALIGN_BYTE);
-    LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_5, LL_DMA_MDATAALIGN_BYTE);
+    LL_DMA_ConfigTransfer(DMA1, LL_DMA_CHANNEL_5,
+                          LL_DMA_DIRECTION_PERIPH_TO_MEMORY | //
+                              LL_DMA_PRIORITY_HIGH |          //
+                              LL_DMA_MODE_NORMAL |            //
+                              LL_DMA_PERIPH_NOINCREMENT |     //
+                              LL_DMA_MEMORY_INCREMENT |       //
+                              LL_DMA_PDATAALIGN_BYTE |        //
+                              LL_DMA_MDATAALIGN_BYTE);
 
     /* USART_TX Init */
 #ifdef STM32G0
     LL_DMA_SetPeriphRequest(DMA1, LL_DMA_CHANNEL_4, LL_DMAMUX_REQ_USARTx_TX);
 #endif
-    LL_DMA_SetDataTransferDirection(DMA1, LL_DMA_CHANNEL_4, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
-    LL_DMA_SetChannelPriorityLevel(DMA1, LL_DMA_CHANNEL_4, LL_DMA_PRIORITY_HIGH);
-    LL_DMA_SetMode(DMA1, LL_DMA_CHANNEL_4, LL_DMA_MODE_NORMAL);
-    LL_DMA_SetPeriphIncMode(DMA1, LL_DMA_CHANNEL_4, LL_DMA_PERIPH_NOINCREMENT);
-    LL_DMA_SetMemoryIncMode(DMA1, LL_DMA_CHANNEL_4, LL_DMA_MEMORY_INCREMENT);
-    LL_DMA_SetPeriphSize(DMA1, LL_DMA_CHANNEL_4, LL_DMA_PDATAALIGN_BYTE);
-    LL_DMA_SetMemorySize(DMA1, LL_DMA_CHANNEL_4, LL_DMA_MDATAALIGN_BYTE);
+    LL_DMA_ConfigTransfer(DMA1, LL_DMA_CHANNEL_4,
+                          LL_DMA_DIRECTION_MEMORY_TO_PERIPH | //
+                              LL_DMA_PRIORITY_HIGH |          //
+                              LL_DMA_MODE_NORMAL |            //
+                              LL_DMA_PERIPH_NOINCREMENT |     //
+                              LL_DMA_MEMORY_INCREMENT |       //
+                              LL_DMA_PDATAALIGN_BYTE |        //
+                              LL_DMA_MDATAALIGN_BYTE);
 
     /* USARTx interrupt Init */
     NVIC_SetPriority(IRQn, 0);
