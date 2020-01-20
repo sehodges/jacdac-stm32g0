@@ -6,23 +6,24 @@ TARGET = g031
 
 CUBE = STM32Cube$(SERIES)
 DRV = $(CUBE)/Drivers
-DEFINES = -DUSE_HAL_DRIVER -DUSE_FULL_ASSERT -DUSE_FULL_LL_DRIVER
+DEFINES = -DUSE_FULL_ASSERT -DUSE_FULL_LL_DRIVER
 WARNFLAGS = -Wall -Werror
 CFLAGS = $(DEFINES) \
 	-mthumb -mfloat-abi=soft  \
-	-Os -g3 -Wall -ffunction-sections \
+	-Os -g3 -Wall -ffunction-sections -fdata-sections \
 	$(WARNFLAGS)
 BUILT = built/$(TARGET)
 HEADERS = $(wildcard src/*.h)
 
-OPENOCD = ./scripts/openocd -s ./scripts -f stlink-v2-1.cfg -f stm32g0x.cfg
-
 include targets/$(TARGET)/config.mk
+
+ifneq ($(BMP),)
+BMP_PORT = $(shell ls -1 /dev/cu.usbmodem* | head -1)
+endif
 
 C_SRC += $(wildcard src/*.c) 
 C_SRC += $(HALSRC)
 
-C_SRC += targets/$(TARGET)/system.c
 AS_SRC = targets/$(TARGET)/startup.s
 LD_SCRIPT = targets/$(TARGET)/linker.ld
 
@@ -36,7 +37,8 @@ CPPFLAGS = \
 	-I$(DRV)/CMSIS/Device/ST/STM32$(SERIES)xx/Include \
 	-I$(DRV)/CMSIS/Include \
 	-Itargets/$(TARGET) \
-	-Isrc
+	-Isrc \
+	-I$(BUILT)
 
 LDFLAGS = -specs=nosys.specs -specs=nano.specs \
 	-T"$(LD_SCRIPT)" -Wl,-Map=$(BUILT)/output.map -Wl,--gc-sections
@@ -50,12 +52,26 @@ drop:
 
 r: run
 
-run: all
+run: all prep-built-gdb
+ifeq ($(BMP),)
 	$(OPENOCD) -c "program $(BUILT)/binary.elf verify reset exit"
+else
+	echo "load" >> built/debug.gdb
+	echo "quit" >> built/debug.gdb
+	arm-none-eabi-gdb --command=built/debug.gdb
+endif
 
-gdb:
+prep-built-gdb:
 	echo "file $(BUILT)/binary.elf" > built/debug.gdb
+ifeq ($(BMP),)
 	echo "target extended-remote | $(OPENOCD) -f gdbdebug.cfg" >> built/debug.gdb
+else
+	echo "target extended-remote $(BMP_PORT)" >> built/debug.gdb
+	echo "monitor swdp_scan" >> built/debug.gdb
+	echo "attach 1" >> built/debug.gdb
+endif
+
+gdb: prep-built-gdb
 	arm-none-eabi-gdb --command=built/debug.gdb
 
 $(BUILT)/%.o: %.c
@@ -70,7 +86,7 @@ $(BUILT)/%.o: %.s
 	@echo AS $<
 	$(V)$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<
 
-$(BUILT)/binary.elf: $(OBJ) Makefile
+$(BUILT)/binary.elf: $(OBJ) Makefile $(BUILT)/addata.h
 	@echo LD $@
 	$(V)$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ) -lm
 
@@ -79,5 +95,13 @@ $(BUILT)/binary.hex: $(BUILT)/binary.elf
 	$(PREFIX)objcopy -O ihex $< $@
 	$(PREFIX)size $<
 
+$(BUILT)/xxxjd.o: $(BUILT)/addata.h
+
+$(BUILT)/addata.h: $(BUILT)/genad
+	./$(BUILT)/genad > "$@"
+
+$(BUILT)/genad: genad/genad.c $(HEADERS)
+	cc -Isrc -o "$@" $<
+
 clean:
-	rm -rf $(BUILT)
+	rm -rf built

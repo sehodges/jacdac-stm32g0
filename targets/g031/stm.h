@@ -15,8 +15,9 @@
 #include "stm32g0xx_ll_pwr.h"
 #include "stm32g0xx_ll_usart.h"
 #include "stm32g0xx_ll_tim.h"
+#include "stm32g0xx_ll_spi.h"
+#include "stm32g0xx_ll_adc.h"
 
-#include "stm32g0xx_hal.h"
-
+#include "stm32g0xx_hal_rcc.h"
 
 #endif
