@@ -18,6 +18,15 @@ void set_log_pin2(int v) {
     pin_set(PIN_LOG1, v);
 }
 
+void set_log_pin3(int v) {}
+void set_log_pin4(int v) {}
+void set_log_pin5(int v) {}
+
+#ifdef STM32G0
+  const uint32_t AHBPrescTable[16UL] = {0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 0UL, 1UL, 2UL, 3UL, 4UL, 6UL, 7UL, 8UL, 9UL};
+  const uint32_t APBPrescTable[8UL] =  {0UL, 0UL, 0UL, 0UL, 1UL, 2UL, 3UL, 4UL};
+#endif
+
 void pulse_log_pin() {
     set_log_pin(1);
     set_log_pin(0);
