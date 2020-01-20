@@ -7,14 +7,14 @@ void target_enable_irq() {
     if (irq_disabled <= 0) {
         irq_disabled = 0;
         __enable_irq();
-        //set_log_pin2(0);
+        // set_log_pin2(0);
     }
 }
 
 void target_disable_irq() {
     irq_disabled++;
     if (irq_disabled == 1) {
-        //set_log_pin2(1);
+        // set_log_pin2(1);
         __disable_irq();
     }
 }
@@ -129,10 +129,14 @@ uint64_t device_id() {
 // need to seed from somewhere if no DevID, eg http://robseward.com/misc/RNG2/
 
 static uint32_t seed;
+void seed_random(uint32_t s) {
+    seed = (seed * 0x1000193) ^ s;
+    DMESG("random seed %x", seed);
+}
+
 uint32_t random() {
-    if (seed == 0) {
-        seed = device_id_hash();
-    }
+    if (seed == 0)
+        seed_random(device_id_hash());
 
     // xorshift algorithm
     uint32_t x = seed;
