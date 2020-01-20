@@ -1,13 +1,15 @@
 #include "jdprotocol.h"
+#include "jdservices.h"
 #include <string.h>
 #include <stdio.h>
 
 #define DEVICE_NAME "JACDAC Button v1.0"
+#define NUM_CAPTOUCH_CH 2
 
 void jd_add_ad_data(const char *name, uint32_t class, uint8_t flags, const void *src,
                     uint32_t size);
 
-const static uint8_t captouchAd[] = { 0x00, 0x01, 0x22, 0x33 };
+const static jd_captouch_advertisement_data_t captouchAd[] = { 0x00, NUM_CAPTOUCH_CH };
 
 void jd_add_services() {
     jd_add_ad_data("Captouch Driver", JD_SERVICE_CLASS_CAPTOUCH, 0, &captouchAd,
