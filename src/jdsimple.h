@@ -1,4 +1,3 @@
-
 #ifndef __JDSIMPLE_H
 #define __JDSIMPLE_H
 
@@ -11,24 +10,12 @@
 #include "stm.h"
 
 #include "dmesg.h"
+#include "pinnames.h"
+#include "jdprotocol.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define JD_SERIAL_PAYLOAD_SIZE 255
-
-typedef struct {
-    uint16_t crc;
-    uint8_t size;
-    uint8_t service_number;
-    uint64_t device_identifier;
-} __attribute((__packed__)) __attribute__ ((aligned (4))) jd_packet_header_t;
-
-typedef struct {
-    jd_packet_header_t header;
-    uint8_t data[JD_SERIAL_PAYLOAD_SIZE + 1];
-} jd_packet_t;
 
 typedef void (*cb_t)(void);
 
@@ -52,6 +39,7 @@ int string_reverse(char *s);
 uint32_t random();
 uint32_t random_around(uint32_t v);
 uint64_t device_id();
+void seed_random(uint32_t s);
 
 // exti.c
 void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback);
@@ -84,6 +72,21 @@ void jd_line_falling();
 void jd_queue_packet(jd_packet_t *pkt);
 uint32_t jd_get_num_pending_tx();
 uint32_t jd_get_free_queue_space();
+
+// dspi.c
+void dspi_init();
+void dspi_tx(const void *data, uint32_t numbytes, cb_t doneHandler);
+
+// pins.c
+void pin_set(int pin, int v);
+void pin_setup_output(int pin);
+void pin_toggle(int pin);
+int pin_get(int pin);
+// pull: -1, 0, 1
+void pin_setup_input(int pin, int pull);
+
+// adc.c
+void adc_init_random(void);
 
 // jdapp.c
 void app_queue_annouce();
