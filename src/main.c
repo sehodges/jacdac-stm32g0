@@ -52,7 +52,7 @@ int main(void) {
 
     tim_init();
     dspi_init();
-    adc_init_random();
+    adc_init_random(); // 300b
 
     tick();
 

@@ -191,7 +191,7 @@ static void USART_UART_Init(void) {
     USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX;
     USART_InitStruct.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
     USART_InitStruct.OverSampling = LL_USART_OVERSAMPLING_16;
-    LL_USART_Init(USARTx, &USART_InitStruct);
+    LL_USART_Init(USARTx, &USART_InitStruct); // 950b
 
 #ifdef LL_USART_FIFOTHRESHOLD_1_8
     LL_USART_SetTXFIFOThreshold(USARTx, LL_USART_FIFOTHRESHOLD_1_8);
