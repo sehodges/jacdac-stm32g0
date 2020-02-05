@@ -24,4 +24,6 @@
 #define LL_EXTI_IsActiveFallingFlag_0_31 LL_EXTI_IsActiveFlag_0_31
 #define __HAL_RCC_ADC_CLK_ENABLE __HAL_RCC_ADC1_CLK_ENABLE
 
+#define CPU_MHZ 48
+
 #endif

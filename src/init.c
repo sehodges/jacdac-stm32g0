@@ -62,16 +62,13 @@ static void enable_nrst_pin() {
 }
 
 void SystemClock_Config(void) {
-    uint32_t clock_mhz;
 
 #if defined(STM32G0)
     LL_FLASH_SetLatency(LL_FLASH_LATENCY_2);
     LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSI, LL_RCC_PLLM_DIV_1, 8, LL_RCC_PLLR_DIV_2);
-    clock_mhz = 64;
 #elif defined(STM32F0)
     LL_FLASH_SetLatency(LL_FLASH_LATENCY_1);
     LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSI_DIV_2, LL_RCC_PLL_MUL_12);
-    clock_mhz = 48;
 #else
 #error "clock?"
 #endif
@@ -91,7 +88,7 @@ void SystemClock_Config(void) {
 
     LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
 
-    SystemCoreClock = clock_mhz * 1000000;
+    SystemCoreClock = CPU_MHZ * 1000000;
     LL_InitTick(SystemCoreClock, 1000U);
     LL_SYSTICK_SetClkSource(LL_SYSTICK_CLKSOURCE_HCLK);
 
