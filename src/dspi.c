@@ -1,6 +1,10 @@
 #include "jdsimple.h"
 
+#ifdef STM32F031x6
+#define SPI_IDX 1
+#else
 #define SPI_IDX 2
+#endif
 
 #if SPI_IDX == 1
 #define SPIx SPI1
