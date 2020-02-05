@@ -17,6 +17,8 @@
 extern "C" {
 #endif
 
+#define RAM_FUNC __attribute__((noinline, long_call, section(".data")))
+
 typedef void (*cb_t)(void);
 
 // main.c

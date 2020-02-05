@@ -2,7 +2,7 @@ PREFIX = arm-none-eabi-
 CC = $(PREFIX)gcc
 AS = $(PREFIX)as
 
-TARGET = g031
+TARGET = f031
 
 CUBE = STM32Cube$(SERIES)
 DRV = $(CUBE)/Drivers

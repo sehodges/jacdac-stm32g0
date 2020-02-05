@@ -23,21 +23,29 @@ void adc_init_random(void) {
     wait_us(LL_ADC_DELAY_TEMPSENSOR_STAB_US);
 
     ADC1->CFGR1 = LL_ADC_REG_OVR_DATA_OVERWRITTEN;
-    
+
+#ifdef STM32G0
     LL_ADC_REG_SetSequencerLength(ADC1, LL_ADC_REG_SEQ_SCAN_DISABLE);
     wait_us(5);
 
     LL_ADC_REG_SetSequencerConfigurable(ADC1, LL_ADC_REG_SEQ_CONFIGURABLE);
     LL_ADC_SetSamplingTimeCommonChannels(ADC1, LL_ADC_SAMPLINGTIME_COMMON_1,
                                          LL_ADC_SAMPLINGTIME_1CYCLE_5);
+#else
+    LL_ADC_SetSamplingTimeCommonChannels(ADC1, LL_ADC_SAMPLINGTIME_1CYCLE_5);
+#endif
 
     ADC1->CFGR2 = LL_ADC_CLOCK_SYNC_PCLK_DIV2;
 
+#ifdef STM32G0
     LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_1, LL_ADC_CHANNEL_TEMPSENSOR);
     LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_TEMPSENSOR, LL_ADC_SAMPLINGTIME_COMMON_1);
 
     LL_ADC_EnableInternalRegulator(ADC1);
     wait_us(LL_ADC_DELAY_INTERNAL_REGUL_STAB_US);
+#else
+    LL_ADC_REG_SetSequencerChannels(ADC1, LL_ADC_CHANNEL_TEMPSENSOR);
+#endif
 
     LL_ADC_StartCalibration(ADC1);
 

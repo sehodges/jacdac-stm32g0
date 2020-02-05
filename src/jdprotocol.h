@@ -29,12 +29,25 @@ typedef struct {
 
 #define JD_SERVICE_FLAGS_ERROR 0x80
 
+#define JD_SERVICE_INFO_SIZE 6
+
 typedef struct {
     uint32_t service_class; // the class of the service
     uint8_t service_flags;
     uint8_t advertisement_size;   // size of the following field
     uint8_t advertisement_data[]; // optional additional data
-} jd_service_information;
+} __attribute((__packed__)) jd_service_information_t;
+
+#define JDSPI_MAGIC 0x3c5e
+
+typedef struct {
+    uint8_t size;
+    uint8_t service_number;
+    uint16_t magic;
+    uint8_t data[0];
+} jd_spi_packet_t;
+
+#define JDSPI_PKTSIZE 252
 
 #ifdef __cplusplus
 }

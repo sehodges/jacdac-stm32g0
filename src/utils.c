@@ -83,9 +83,8 @@ int itoa(int n, char *s) {
     return 0;
 }
 
-void wait_us(int n) {
-    // 64MHz, this is 3 cycles
-    n = n * 64 / 3;
+RAM_FUNC
+static void do_wait_us(int n) {
     __asm__ __volatile__(".syntax unified\n"
                          "1:              \n"
                          "   subs %0, #1   \n" // subtract 1 from %0 (n)
@@ -94,6 +93,19 @@ void wait_us(int n) {
                          :                     // no input
                          :                     // no clobber
     );
+}
+
+void wait_us(int n) {
+#ifdef STM32G0
+    // 64MHz, this is 3 cycles
+    n = n * 64 / 3;
+#elif defined(STM32F0)
+    // 48MHz, and the loop is 4 cycles
+    n = n * 48 / 4;
+#else
+#error "define clock rate"
+#endif
+    do_wait_us(n);
 }
 
 // https://tools.ietf.org/html/draft-eastlake-fnv-14#section-3

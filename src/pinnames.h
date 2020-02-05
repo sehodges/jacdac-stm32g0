@@ -1,5 +1,8 @@
 #pragma once
 
+#define PIN_SWDIO PA_13
+#define PIN_SWCLK PA_14
+
 #define PA_0 0x00
 #define PA_1 0x01
 #define PA_2 0x02

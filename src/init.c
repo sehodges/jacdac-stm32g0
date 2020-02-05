@@ -15,7 +15,7 @@ void SysTick_Handler(void) {}
 uint32_t SystemCoreClock;
 
 static void enable_nrst_pin() {
-#ifdef STM32G0
+#ifdef FLASH_OPTR_NRST_MODE
 #define FLASH_KEY1 0x45670123U
 #define FLASH_KEY2 0xCDEF89ABU
 
