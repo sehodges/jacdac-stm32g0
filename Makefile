@@ -18,7 +18,11 @@ HEADERS = $(wildcard src/*.h)
 include targets/$(TARGET)/config.mk
 
 ifneq ($(BMP),)
-BMP_PORT = $(shell ls -1 /dev/cu.usbmodem* | head -1)
+
+
+
+
+BMP_PORT = $(shell ls -1 /dev/cu.usbmodem????????1 | head -1)
 endif
 
 C_SRC += $(wildcard src/*.c) 

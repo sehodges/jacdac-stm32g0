@@ -124,8 +124,6 @@ static void DMA_Init(void) {
 }
 
 static void USART_UART_Init(void) {
-    LL_USART_InitTypeDef USART_InitStruct = {0};
-
 #if USART_IDX == 2
     __HAL_RCC_USART2_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
@@ -181,17 +179,14 @@ static void USART_UART_Init(void) {
     LL_DMA_EnableIT_TC(DMA1, LL_DMA_CHANNEL_5);
     LL_DMA_EnableIT_TE(DMA1, LL_DMA_CHANNEL_5);
 
+    USARTx->CR1 = LL_USART_DATAWIDTH_8B | LL_USART_PARITY_NONE | LL_USART_OVERSAMPLING_16 |
+                  LL_USART_DIRECTION_TX;
+    USARTx->CR2 = LL_USART_STOPBITS_1;
+    USARTx->CR3 = LL_USART_HWCONTROL_NONE;
+    USARTx->BRR = CPU_MHZ; // ->1MHz
 #ifdef LL_USART_PRESCALER_DIV1
-    USART_InitStruct.PrescalerValue = LL_USART_PRESCALER_DIV1;
+    LL_USART_SetPrescaler(USARTx, LL_USART_PRESCALER_DIV1);
 #endif
-    USART_InitStruct.BaudRate = 1000000;
-    USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
-    USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
-    USART_InitStruct.Parity = LL_USART_PARITY_NONE;
-    USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX;
-    USART_InitStruct.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
-    USART_InitStruct.OverSampling = LL_USART_OVERSAMPLING_16;
-    LL_USART_Init(USARTx, &USART_InitStruct); // 950b
 
 #ifdef LL_USART_FIFOTHRESHOLD_1_8
     LL_USART_SetTXFIFOThreshold(USARTx, LL_USART_FIFOTHRESHOLD_1_8);
