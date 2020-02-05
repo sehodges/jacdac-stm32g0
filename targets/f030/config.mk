@@ -2,8 +2,10 @@ SERIES = F0
 DEFINES += -DSTM32F030x8
 CFLAGS += -mcpu=cortex-m0
 
+#OPENOCD = ./scripts/openocd -s ./scripts -f stlink-v2-1.cfg -f stm32f0x.cfg
+OPENOCD = openocd -f interface/stlink-v2-1.cfg -f target/stm32f0x.cfg
 #OPENOCD = ./scripts/openocd -s ./scripts -f cmsis-dap.cfg -f stm32f0x.cfg
-BMP = 1
+#BMP = 1
 
 HALPREF = $(DRV)/STM32F0xx_HAL_Driver/Src
 HALSRC =  \
