@@ -28,7 +28,6 @@ void set_log_pin3(int v) {}
 void set_log_pin4(int v) {}
 void set_log_pin5(int v) {}
 
-
 void pulse_log_pin() {
     set_log_pin(1);
     set_log_pin(0);
@@ -60,11 +59,20 @@ int main(void) {
 
     jd_init();
 
+    pwm_init(1000, 200);
+    int d = 0;
+
     uint64_t lastBlink = tim_get_micros();
     while (1) {
         if (tim_get_micros() - lastBlink > 300000) {
             lastBlink = tim_get_micros();
             led_toggle();
+
+            d++;
+            if (d > 5)
+                d = 0;
+            pwm_set_duty(d * 100);
+            pulse_log_pin();
         }
 
         app_process();

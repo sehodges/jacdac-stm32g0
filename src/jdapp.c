@@ -30,7 +30,7 @@ void app_process() {
         cnt.hd.size = 4;
         cnt.hd.device_identifier = device_id();
         cnt.hd.service_number = 1;
-        jd_queue_packet((jd_packet_t *)&cnt);
+        // jd_queue_packet((jd_packet_t *)&cnt);
     }
 }
 
