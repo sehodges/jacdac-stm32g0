@@ -18,16 +18,16 @@
 #error "bad usart"
 #endif
 
-#if USART_IDX == 1
-#define PIN_PORT GPIOB
-#define PIN_PIN LL_GPIO_PIN_6
-#define PIN_AF LL_GPIO_AF_0
-#define PIN_MODER (1 << 6 * 2)
-#elif USART_IDX == 2
+#if USART_IDX == 2 || defined(STM32F0)
 #define PIN_PORT GPIOA
 #define PIN_PIN LL_GPIO_PIN_2
 #define PIN_AF LL_GPIO_AF_1
 #define PIN_MODER (1 << 2 * 2)
+#elif USART_IDX == 1
+#define PIN_PORT GPIOB
+#define PIN_PIN LL_GPIO_PIN_6
+#define PIN_AF LL_GPIO_AF_0
+#define PIN_MODER (1 << 6 * 2)
 #else
 // generic
 #error "bad usart"

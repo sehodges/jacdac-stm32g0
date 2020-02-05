@@ -1,8 +1,14 @@
 #include "jdsimple.h"
 
+#ifdef BUTTON_V0
+#define PIN_LED PB_3
+#define PIN_LOG0 PB_4 // LED
+#define PIN_LOG1 PA_0
+#else
 #define PIN_LED PC_6
 #define PIN_LOG0 PA_10
 #define PIN_LOG1 PA_9
+#endif
 
 void led_init() {
     pin_setup_output(PIN_LOG0);
