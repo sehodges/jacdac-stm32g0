@@ -59,8 +59,10 @@ int main(void) {
 
     jd_init();
 
+#ifdef PWM_TEST
     pwm_init(1000, 200);
     int d = 0;
+#endif
 
     uint64_t lastBlink = tim_get_micros();
     while (1) {
@@ -68,11 +70,13 @@ int main(void) {
             lastBlink = tim_get_micros();
             led_toggle();
 
+#ifdef PWM_TEST
             d++;
             if (d > 5)
                 d = 0;
             pwm_set_duty(d * 100);
             pulse_log_pin();
+#endif
         }
 
         app_process();
