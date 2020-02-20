@@ -74,12 +74,18 @@ uint16_t crc16(const void *data, uint32_t size);
 
 // jdlow.c
 void jd_init(void);
-void jd_tx_completed(int errCode);
-void jd_rx_completed(int dataLeft);
-void jd_line_falling(void);
 void jd_queue_packet(jd_packet_t *pkt);
 uint32_t jd_get_num_pending_tx(void);
 uint32_t jd_get_free_queue_space(void);
+// callbacks from uart.c
+void jd_tx_completed(int errCode);
+void jd_rx_completed(int dataLeft);
+void jd_line_falling(void);
+
+// jdrouting.c
+typedef void (*pkt_handler_t)(void *userData, jd_packet_t *pkt);
+void jd_register_client(uint32_t serviceClass, pkt_handler_t handler, void *userData);
+void jd_register_host(uint32_t serviceClass, pkt_handler_t handler, void *userData);
 
 // dspi.c
 void dspi_init(void);
