@@ -92,7 +92,7 @@ static void set_tick_timer(uint8_t statusClear) {
     }
     if ((status & JD_STATUS_RX_ACTIVE) == 0) {
         if (txQueue[0] && !(status & JD_STATUS_TX_ACTIVE))
-            tim_set_timer(random_around(50), flush_tx_queue);
+            tim_set_timer(random_around(150), flush_tx_queue);
         else
             tim_set_timer(10000, tick);
     }
