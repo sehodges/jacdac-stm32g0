@@ -29,8 +29,8 @@ void app_process() {
         cnt.count++;
         cnt.hd.size = 4;
         cnt.hd.device_identifier = device_id();
-        cnt.hd.service_number = 1;
-        // jd_queue_packet((jd_packet_t *)&cnt);
+        cnt.hd.service_number = 255;
+        jd_queue_packet((jd_packet_t *)&cnt);
     }
 }
 
@@ -41,7 +41,7 @@ void app_handle_packet(jd_packet_t *pkt) {
     //      pkt->header.service_number, pkt->header.size);
 
     numPkts++;
-    if (pkt->header.service_number == 1) {
+    if (pkt->header.service_number == 255) {
         count_service_pkt_t *cs = (count_service_pkt_t *)pkt;
         uint32_t c = cs->count;
         if (prevCnt && prevCnt + 1 != c) {

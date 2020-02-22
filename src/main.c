@@ -3,7 +3,7 @@
 #ifdef BUTTON_V0
 #define PIN_LED PB_3
 #define PIN_LED2 PB_4
-#define PIN_LOG0 PA_0 // LED
+#define PIN_LOG0 PA_0
 #define PIN_LOG1 PA_1
 #else
 #define PIN_LED PC_6
