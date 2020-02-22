@@ -101,10 +101,19 @@ void DMA_Handler(void) {
         if (isr & DMA_ISR_TCIF4) {
             while (!LL_USART_IsActiveFlag_TC(USARTx))
                 ;
+            // the standard BRK signal is too short - it's 10uS - to be detected as break at least on NRF52
+            #if 1
+            LL_USART_Disable(USARTx);
+            LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_OUTPUT);
+            LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
+            wait_us(12);
+            LL_GPIO_SetOutputPin(PIN_PORT, PIN_PIN);
+            #else
             LL_USART_RequestBreakSending(USARTx);
             // DMESG("USARTx %x", USARTx->ISR);
             while (LL_USART_IsActiveFlag_SBK(USARTx))
                 ;
+            #endif
         } else {
             DMESG("USARTx TX Error");
             errCode = -1;
@@ -263,8 +272,8 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
     // to here, it's about 1.3us
 
     // the USART takes a few us to start transmiting
-    // this value gives 60us from the end of low pulse to start bit
-    wait_us(57);
+    // this value gives 40us from the end of low pulse to start bit
+    wait_us(37);
 
     LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_4);
 
