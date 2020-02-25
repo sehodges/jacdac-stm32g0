@@ -245,6 +245,21 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
         // we don't re-enable EXTI - the RX complete will do it
         return -1;
     }
+
+#ifdef CODAL_DELAY
+    // this roughly equalizes the time between the log pin going up and the line going down
+    // in codal-based implementation and here
+    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
+    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
+    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
+    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
+    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
+    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
+    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
+    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
+    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
+#endif
+
     LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
     gpio_probe_and_set(PIN_PORT, PIN_PIN, PIN_MODER | PIN_PORT->MODER);
     if (!(PIN_PORT->MODER & PIN_MODER)) {
@@ -253,7 +268,7 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
         exti_trigger(jd_line_falling);
         return -1;
     }
-    wait_us(9);
+    wait_us(11);
     LL_GPIO_SetOutputPin(PIN_PORT, PIN_PIN);
 
     // from here...
