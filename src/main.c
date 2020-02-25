@@ -7,27 +7,42 @@
 #define PIN_LOG0 PB_1
 #define PIN_LOG1 PA_1
 #define PIN_LOG2 PA_0
+#define PIN_LOG3 PB_2
 #else
 #define PIN_LED PC_6
 #define PIN_LOG0 PA_10
 #define PIN_LOG1 PA_9
 #endif
 
+static uint64_t led2off;
+
 void led_init() {
     pin_setup_output(PIN_LOG0);
     pin_setup_output(PIN_LOG1);
     pin_setup_output(PIN_LOG2);
+    pin_setup_output(PIN_LOG3);
     pin_setup_output(PIN_LED);
     pin_setup_output(PIN_LED2);
 }
 
-
 void log_pin_set(int line, int v) {
-    switch(line){
-        case 4: pin_set(PIN_LOG0, v); break;
-        case 1: pin_set(PIN_LOG1, v); break;
-        case 2: pin_set(PIN_LOG2, v); break;
-        case 0: pin_set(PIN_LED2, v); break;
+    switch (line) {
+    case 4:
+        pin_set(PIN_LOG0, v);
+        break;
+    case 1:
+        pin_set(PIN_LOG1, v);
+        break;
+    case 2:
+        if (v) {
+            pin_set(PIN_LED2, 1);
+            led2off = tim_get_micros() + 5000;
+        }
+        pin_set(PIN_LOG2, v);
+        break;
+    case 0:
+        //pin_set(PIN_LOG3, v);
+        break;
     }
 }
 
@@ -73,9 +88,12 @@ int main(void) {
             if (d > 5)
                 d = 0;
             pwm_set_duty(d * 100);
-            //pulse_log_pin();
+            // pulse_log_pin();
 #endif
         }
+
+        if (tim_get_micros() > led2off)
+            pin_set(PIN_LED2, 0);
 
         app_process();
     }
