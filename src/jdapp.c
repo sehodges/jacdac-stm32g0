@@ -24,6 +24,12 @@ typedef struct {
 
 static count_service_pkt_t cnt;
 
+void app_packet_sent(jd_packet_t *pkt) {
+    // queue_cnt();
+}
+
+void app_packet_dropped(jd_packet_t *pkt) {}
+
 void app_process() {
     if (jd_get_num_pending_tx() == 0) {
         cnt.count++;

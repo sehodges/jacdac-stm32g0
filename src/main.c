@@ -3,6 +3,7 @@
 #ifdef BUTTON_V0
 #define PIN_LED PB_3
 #define PIN_LED2 PB_4
+
 #define PIN_LOG0 PB_1
 #define PIN_LOG1 PA_1
 #define PIN_LOG2 PA_0
@@ -17,27 +18,17 @@ void led_init() {
     pin_setup_output(PIN_LOG1);
     pin_setup_output(PIN_LOG2);
     pin_setup_output(PIN_LED);
+    pin_setup_output(PIN_LED2);
 }
 
-void set_log_pin(int v) {
-    
-}
 
-void set_log_pin2(int v) {
-    pin_set(PIN_LOG1, v);
-}
-
-void set_log_pin3(int v) {
-    pin_set(PIN_LOG2, v);    
-}
-void set_log_pin4(int v) {
-    pin_set(PIN_LOG0, v);
-}
-void set_log_pin5(int v) {}
-
-void pulse_log_pin() {
-    set_log_pin(1);
-    set_log_pin(0);
+void log_pin_set(int line, int v) {
+    switch(line){
+        case 4: pin_set(PIN_LOG0, v); break;
+        case 1: pin_set(PIN_LOG1, v); break;
+        case 2: pin_set(PIN_LOG2, v); break;
+        case 0: pin_set(PIN_LED2, v); break;
+    }
 }
 
 void led_toggle() {
