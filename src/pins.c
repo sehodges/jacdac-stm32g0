@@ -28,7 +28,7 @@ void pin_setup_input(int pin, int pull) {
     else if (pull == 0)
         GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
     else
-        panic();
+        jd_panic();
     GPIO_InitStruct.Pin = PIN(pin);
     LL_GPIO_Init(PORT(pin), &GPIO_InitStruct);
 }

@@ -90,11 +90,11 @@ int main(void) {
     }
 }
 
-void panic(void) {
+void jd_panic(void) {
     DMESG("PANIC!");
     target_disable_irq();
     while (1) {
         led_toggle();
-        wait_us(100000);
+        target_wait_us(100000);
     }
 }

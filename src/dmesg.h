@@ -25,7 +25,6 @@ DEALINGS IN THE SOFTWARE.
 #ifndef CODAL_DMESG_H
 #define CODAL_DMESG_H
 
-#include "jdsimple.h"
 #include <stdarg.h>
 
 #define NOLOG ((void)0)

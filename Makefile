@@ -4,16 +4,18 @@ AS = $(PREFIX)as
 
 TARGET = f031
 
+JD_CORE = jacdac-core
+
 CUBE = STM32Cube$(SERIES)
 DRV = $(CUBE)/Drivers
-DEFINES = -DUSE_FULL_ASSERT -DUSE_FULL_LL_DRIVER -DSTM32$(SERIES)
+DEFINES = -DUSE_FULL_ASSERT -DUSE_FULL_LL_DRIVER -DSTM32$(SERIES) -DDEVICE_DMESG_BUFFER_SIZE=1024
 WARNFLAGS = -Wall -Werror
 CFLAGS = $(DEFINES) \
 	-mthumb -mfloat-abi=soft  \
 	-Os -g3 -Wall -ffunction-sections -fdata-sections \
 	$(WARNFLAGS)
 BUILT = built/$(TARGET)
-HEADERS = $(wildcard src/*.h)
+HEADERS = $(wildcard src/*.h) $(wildcard $(JD_CORE)/*.h)
 
 include targets/$(TARGET)/config.mk
 
@@ -26,6 +28,8 @@ BMP_PORT = $(shell ls -1 /dev/cu.usbmodem????????1 | head -1)
 endif
 
 C_SRC += $(wildcard src/*.c) 
+C_SRC += $(JD_CORE)/jdlow.c
+C_SRC += $(JD_CORE)/jdutil.c
 C_SRC += $(HALSRC)
 
 AS_SRC = targets/$(TARGET)/startup.s
@@ -42,6 +46,7 @@ CPPFLAGS = \
 	-I$(DRV)/CMSIS/Include \
 	-Itargets/$(TARGET) \
 	-Isrc \
+	-I$(JD_CORE) \
 	-I$(BUILT)
 
 LDFLAGS = -specs=nosys.specs -specs=nano.specs \
@@ -84,13 +89,14 @@ $(BUILT)/%.o: %.c
 	$(V)$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<
 
 $(wildcard $(BUILT)/src/*.o): $(HEADERS)
+$(wildcard $(BUILT)/$(JD_CORE)/*.o): $(HEADERS)
 
 $(BUILT)/%.o: %.s
 	@mkdir -p $(dir $@)
 	@echo AS $<
 	$(V)$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<
 
-$(BUILT)/binary.elf: $(OBJ) Makefile $(BUILT)/addata.h
+$(BUILT)/binary.elf: $(OBJ) Makefile
 	@echo LD $@
 	$(V)$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ) -lm
 
@@ -98,8 +104,6 @@ $(BUILT)/binary.hex: $(BUILT)/binary.elf
 	@echo HEX $<
 	$(PREFIX)objcopy -O ihex $< $@
 	$(PREFIX)size $<
-
-$(BUILT)/xxxjd.o: $(BUILT)/addata.h
 
 $(BUILT)/addata.h: $(BUILT)/genad
 	./$(BUILT)/genad > "$@"

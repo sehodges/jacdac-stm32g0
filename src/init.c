@@ -3,7 +3,7 @@
 void NMI_Handler(void) {}
 
 void HardFault_Handler(void) {
-    panic();
+    jd_panic();
 }
 
 void SVC_Handler(void) {}

@@ -106,7 +106,7 @@ void DMA_Handler(void) {
             LL_USART_Disable(USARTx);
             LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_OUTPUT);
             LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
-            wait_us(12);
+            target_wait_us(12);
             LL_GPIO_SetOutputPin(PIN_PORT, PIN_PIN);
             #else
             LL_USART_RequestBreakSending(USARTx);
@@ -219,12 +219,12 @@ void uart_init() {
 static void check_idle() {
 #if 0
     if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_4))
-        panic();
+        jd_panic();
     if (LL_DMA_IsEnabledChannel(DMA1, LL_DMA_CHANNEL_5))
-        panic();
+        jd_panic();
 #endif
     if (LL_USART_IsEnabled(USARTx))
-        panic();
+        jd_panic();
 }
 
 void uart_wait_high() {
@@ -241,7 +241,7 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
     if (LL_USART_IsEnabled(USARTx)) {
         // TX should never be already enabled though
         if (USARTx->CR1 & USART_CR1_TE)
-            panic();
+            jd_panic();
         // we don't re-enable EXTI - the RX complete will do it
         return -1;
     }
@@ -263,12 +263,10 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
     LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
     gpio_probe_and_set(PIN_PORT, PIN_PIN, PIN_MODER | PIN_PORT->MODER);
     if (!(PIN_PORT->MODER & PIN_MODER)) {
-        set_log_pin5(1);
-        set_log_pin5(0);
         exti_trigger(jd_line_falling);
         return -1;
     }
-    wait_us(11);
+    target_wait_us(11);
     LL_GPIO_SetOutputPin(PIN_PORT, PIN_PIN);
 
     // from here...
@@ -288,7 +286,7 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
 
     // the USART takes a few us to start transmiting
     // this value gives 40us from the end of low pulse to start bit
-    wait_us(37);
+    target_wait_us(37);
 
     LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_4);
 

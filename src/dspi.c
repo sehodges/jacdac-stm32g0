@@ -118,7 +118,7 @@ void dspi_tx(const void *data, uint32_t numbytes, cb_t doneHandler) {
     // DMESG("dspi tx");
 
     if (doneH)
-        panic();
+        jd_panic();
     doneH = doneHandler;
 
     /* Reset the threshold bit */

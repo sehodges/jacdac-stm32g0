@@ -53,7 +53,7 @@ void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback) {
     else if (port == GPIOC)
         extiport = LL_EXTI_CONFIG_PORTC;
     else
-        panic();
+        jd_panic();
 
     int numcb = 0;
     for (uint32_t pos = 0; pos < 16; ++pos) {

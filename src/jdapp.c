@@ -3,7 +3,7 @@
 #define ANN_SIZE 12
 
 static struct {
-    jd_packet_header_t hd;
+    jd_packet_t hd;
     char data[ANN_SIZE];
 } ann;
 
@@ -12,13 +12,13 @@ void app_queue_annouce() {
     ann.hd.device_identifier = device_id();
     ann.hd.service_number = 0;
     strcpy(ann.data, "Hello");
-    ann.data[8] = random();
-    ann.data[9] = random();
+    ann.data[8] = jd_random();
+    ann.data[9] = jd_random();
     jd_queue_packet((jd_packet_t *)&ann);
 }
 
 typedef struct {
-    jd_packet_header_t hd;
+    jd_packet_t hd;
     uint32_t count;
 } count_service_pkt_t;
 
@@ -37,16 +37,16 @@ void app_process() {
 static uint32_t prevCnt;
 uint32_t numErrors, numPkts;
 void app_handle_packet(jd_packet_t *pkt) {
-    //DMESG("handle pkt; dst=%x/%d sz=%d", (uint32_t)pkt->header.device_identifier,
+    // DMESG("handle pkt; dst=%x/%d sz=%d", (uint32_t)pkt->header.device_identifier,
     //      pkt->header.service_number, pkt->header.size);
 
     numPkts++;
-    if (pkt->header.service_number == 255) {
+    if (pkt->service_number == 255) {
         count_service_pkt_t *cs = (count_service_pkt_t *)pkt;
         uint32_t c = cs->count;
         if (prevCnt && prevCnt + 1 != c) {
-            set_log_pin2(1);
-            set_log_pin2(0);
+            log_pin_set(2, 1);
+            log_pin_set(2, 0);
             numErrors++;
             DMESG("ERR %d/%d %d", numErrors, numPkts, numErrors * 10000 / numPkts);
         }

@@ -12,11 +12,11 @@ void target_enable_irq() {
 }
 
 void target_disable_irq() {
-    irq_disabled++;
-    if (irq_disabled == 1) {
+    if (irq_disabled == 0) {
         // set_log_pin2(1);
         __disable_irq();
     }
+    irq_disabled++;
 }
 
 /**
@@ -95,7 +95,7 @@ static void do_wait_us(int n) {
     );
 }
 
-void wait_us(int n) {
+void target_wait_us(uint32_t n) {
 #ifdef STM32G0
     // 64MHz, this is 3 cycles
     n = n * 64 / 3;
@@ -108,18 +108,9 @@ void wait_us(int n) {
     do_wait_us(n);
 }
 
-// https://tools.ietf.org/html/draft-eastlake-fnv-14#section-3
-uint32_t hash_fnv1a(const void *data, unsigned len) {
-    const uint8_t *d = (const uint8_t *)data;
-    uint32_t h = 0x811c9dc5;
-    while (len--)
-        h = (h * 0x1000193) ^ *d++;
-    return h;
-}
-
 uint32_t device_id_hash() {
     uint32_t *uid = (uint32_t *)UID_BASE;
-    return hash_fnv1a(uid, 12);
+    return jd_hash_fnv1a(uid, 12);
 }
 
 uint64_t device_id() {
@@ -136,35 +127,6 @@ uint64_t device_id() {
         cache = (uint64_t)w0 << 32 | w1;
     }
     return cache;
-}
-
-// need to seed from somewhere if no DevID, eg http://robseward.com/misc/RNG2/
-
-static uint32_t seed;
-void seed_random(uint32_t s) {
-    seed = (seed * 0x1000193) ^ s;
-    DMESG("random seed %x", seed);
-}
-
-uint32_t random() {
-    if (seed == 0)
-        seed_random(device_id_hash());
-
-    // xorshift algorithm
-    uint32_t x = seed;
-    x ^= x << 13;
-    x ^= x >> 17;
-    x ^= x << 5;
-    seed = x;
-    return x;
-}
-
-// return v +/- 25% or so
-uint32_t random_around(uint32_t v) {
-    uint32_t mask = 0xfffffff;
-    while (mask > v)
-        mask >>= 1;
-    return (v - (mask >> 1)) + (random() & mask);
 }
 
 // faster versions of memcpy() and memset()
