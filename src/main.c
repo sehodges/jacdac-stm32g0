@@ -8,6 +8,13 @@
 #define PIN_LOG1 PA_1
 #define PIN_LOG2 PA_0
 #define PIN_LOG3 PB_2
+#elif defined(JDM_V0)
+#define PIN_LED PB_1
+#define PIN_LED2 -1
+#define PIN_LOG0 PA_2
+#define PIN_LOG1 -1
+#define PIN_LOG2 PA_1
+#define PIN_LOG3 -1
 #else
 #define PIN_LED PC_6
 #define PIN_LOG0 PA_10

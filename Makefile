@@ -2,14 +2,14 @@ PREFIX = arm-none-eabi-
 CC = $(PREFIX)gcc
 AS = $(PREFIX)as
 
-TARGET = f031
+TARGET ?= jdm-v0
 
 JD_CORE = jacdac-core
 
 CUBE = STM32Cube$(SERIES)
 DRV = $(CUBE)/Drivers
 DEFINES = -DUSE_FULL_ASSERT -DUSE_FULL_LL_DRIVER -DSTM32$(SERIES) -DDEVICE_DMESG_BUFFER_SIZE=1024
-WARNFLAGS = -Wall -Werror
+WARNFLAGS = -Wall
 CFLAGS = $(DEFINES) \
 	-mthumb -mfloat-abi=soft  \
 	-Os -g3 -Wall -ffunction-sections -fdata-sections \
@@ -18,6 +18,7 @@ BUILT = built/$(TARGET)
 HEADERS = $(wildcard src/*.h) $(wildcard $(JD_CORE)/*.h)
 
 include targets/$(TARGET)/config.mk
+BASE_TARGET ?= $(TARGET)
 
 ifneq ($(BMP),)
 
@@ -32,8 +33,8 @@ C_SRC += $(JD_CORE)/jdlow.c
 C_SRC += $(JD_CORE)/jdutil.c
 C_SRC += $(HALSRC)
 
-AS_SRC = targets/$(TARGET)/startup.s
-LD_SCRIPT = targets/$(TARGET)/linker.ld
+AS_SRC = targets/$(BASE_TARGET)/startup.s
+LD_SCRIPT = targets/$(BASE_TARGET)/linker.ld
 
 V = @
 
@@ -45,6 +46,7 @@ CPPFLAGS = \
 	-I$(DRV)/CMSIS/Device/ST/STM32$(SERIES)xx/Include \
 	-I$(DRV)/CMSIS/Include \
 	-Itargets/$(TARGET) \
+	-Itargets/$(BASE_TARGET) \
 	-Isrc \
 	-I$(JD_CORE) \
 	-I$(BUILT)
