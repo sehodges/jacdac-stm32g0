@@ -48,6 +48,9 @@ void jd_register_host(uint32_t serviceClass, pkt_handler_t handler, void *userDa
 // dspi.c
 void dspi_init(void);
 void dspi_tx(const void *data, uint32_t numbytes, cb_t doneHandler);
+void px_init(void);
+void px_tx(const void *data, uint32_t numbytes, cb_t doneHandler);
+void px_set(const void *data, uint32_t index, uint32_t color);
 
 // pins.c
 void pin_set(int pin, int v);

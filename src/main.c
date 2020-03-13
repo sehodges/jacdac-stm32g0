@@ -84,11 +84,33 @@ static void tick() {
     tim_set_timer(10000, tick);
 }
 
+static void spi_done() {}
+
+#define NUM_PIXELS 10
+static uint32_t px_buffer[(NUM_PIXELS * 9 + 8) / 4];
+
+void rainbow() {
+    static int cnt = 0;
+    static uint8_t delay;
+
+    pin_set(PIN_PWR, 0); // PWR is reverse polarity
+    if (delay++ > 70) {
+        cnt++;
+        delay = 0;
+    }
+    if (cnt > NUM_PIXELS + 5)
+        cnt = 0;
+    for (int i = 0; i < NUM_PIXELS; ++i)
+        px_set(px_buffer, i, i < cnt ? 0x0f0000 : 0x000f00);
+
+    px_tx(px_buffer, sizeof(px_buffer), rainbow);
+}
+
 int main(void) {
     led_init();
 
     tim_init();
-    // dspi_init();
+    px_init();
     adc_init_random(); // 300b
 
     tick();
@@ -99,6 +121,8 @@ int main(void) {
     pwm_init(1000, 200);
     int d = 0;
 #endif
+
+    rainbow();
 
     uint64_t lastBlink = tim_get_micros();
     while (1) {
