@@ -11,10 +11,17 @@
 #elif defined(JDM_V0)
 #define PIN_LED PB_1
 #define PIN_LED2 -1
-#define PIN_LOG0 PA_2
+#define PIN_LOG0 -1 // sig_write
 #define PIN_LOG1 -1
-#define PIN_LOG2 PA_1
+#define PIN_LOG2 -1 // sig error
 #define PIN_LOG3 -1
+
+#define PIN_PWR PA_3
+#define PIN_P0 PA_1
+#define PIN_P1 PA_2
+#define PIN_ASCK PA_5
+#define PIN_AMOSI PA_7
+#define PIN_SERVO PA_6
 #else
 #define PIN_LED PC_6
 #define PIN_LOG0 PA_10
@@ -30,6 +37,15 @@ void led_init() {
     pin_setup_output(PIN_LOG3);
     pin_setup_output(PIN_LED);
     pin_setup_output(PIN_LED2);
+
+    pin_setup_output(PIN_PWR);
+    pin_setup_output(PIN_P0);
+    pin_setup_output(PIN_P1);
+    pin_setup_output(PIN_ASCK);
+    pin_setup_output(PIN_AMOSI);
+    pin_setup_output(PIN_SERVO);
+
+    pin_set(PIN_PWR, 1); // PWR is reverse polarity
 }
 
 void log_pin_set(int line, int v) {
@@ -48,7 +64,7 @@ void log_pin_set(int line, int v) {
         pin_set(PIN_LOG2, v);
         break;
     case 0:
-        //pin_set(PIN_LOG3, v);
+        // pin_set(PIN_LOG3, v);
         break;
     }
 }
@@ -72,7 +88,7 @@ int main(void) {
     led_init();
 
     tim_init();
-    dspi_init();
+    // dspi_init();
     adc_init_random(); // 300b
 
     tick();
