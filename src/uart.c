@@ -1,5 +1,27 @@
 #include "jdsimple.h"
 
+#define PORT(pin) ((GPIO_TypeDef *)(GPIOA_BASE + (0x400 * (pin >> 4))))
+#define PIN(pin) (1 << ((pin)&0xf))
+
+#if defined(JDM_V0)
+#define UART_PIN PA_9
+#define PIN_AF LL_GPIO_AF_1
+#define USART_IDX 1
+#elif USART_IDX == 2 || defined(STM32F0)
+#define UART_PIN PA_2
+#define PIN_AF LL_GPIO_AF_1
+#elif USART_IDX == 1
+#define UART_PIN PB_6
+#define PIN_AF LL_GPIO_AF_0
+#else
+// generic
+#error "bad usart"
+#endif
+
+#define PIN_PORT PORT(UART_PIN)
+#define PIN_PIN PIN(UART_PIN)
+#define PIN_MODER (1 << (UART_PIN & 0xf) * 2)
+
 #define USART_IDX 1
 
 #if USART_IDX == 1
@@ -15,21 +37,6 @@
 #define LL_DMAMUX_REQ_USARTx_RX LL_DMAMUX_REQ_USART2_RX
 #define LL_DMAMUX_REQ_USARTx_TX LL_DMAMUX_REQ_USART2_TX
 #else
-#error "bad usart"
-#endif
-
-#if USART_IDX == 2 || defined(STM32F0)
-#define PIN_PORT GPIOA
-#define PIN_PIN LL_GPIO_PIN_2
-#define PIN_AF LL_GPIO_AF_1
-#define PIN_MODER (1 << 2 * 2)
-#elif USART_IDX == 1
-#define PIN_PORT GPIOB
-#define PIN_PIN LL_GPIO_PIN_6
-#define PIN_AF LL_GPIO_AF_0
-#define PIN_MODER (1 << 6 * 2)
-#else
-// generic
 #error "bad usart"
 #endif
 
@@ -55,7 +62,10 @@ __attribute__((noinline)) void gpio_probe_and_set(GPIO_TypeDef *gpio, uint32_t p
 static void uartOwnsPin(int doesIt) {
     if (doesIt) {
         LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_ALTERNATE);
-        LL_GPIO_SetAFPin_0_7(PIN_PORT, PIN_PIN, PIN_AF);
+        if ((UART_PIN & 0xf) <= 7)
+            LL_GPIO_SetAFPin_0_7(PIN_PORT, PIN_PIN, PIN_AF);
+        else
+            LL_GPIO_SetAFPin_8_15(PIN_PORT, PIN_PIN, PIN_AF);
     } else {
         LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_INPUT);
         exti_clear(PIN_PIN);
@@ -101,19 +111,19 @@ void DMA_Handler(void) {
         if (isr & DMA_ISR_TCIF4) {
             while (!LL_USART_IsActiveFlag_TC(USARTx))
                 ;
-            // the standard BRK signal is too short - it's 10uS - to be detected as break at least on NRF52
-            #if 1
+// the standard BRK signal is too short - it's 10uS - to be detected as break at least on NRF52
+#if 1
             LL_USART_Disable(USARTx);
             LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_OUTPUT);
             LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
             target_wait_us(12);
             LL_GPIO_SetOutputPin(PIN_PORT, PIN_PIN);
-            #else
+#else
             LL_USART_RequestBreakSending(USARTx);
             // DMESG("USARTx %x", USARTx->ISR);
             while (LL_USART_IsActiveFlag_SBK(USARTx))
                 ;
-            #endif
+#endif
         } else {
             DMESG("USARTx TX Error");
             errCode = -1;
@@ -246,19 +256,6 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
         return -1;
     }
 
-#ifdef CODAL_DELAY
-    // this roughly equalizes the time between the log pin going up and the line going down
-    // in codal-based implementation and here
-    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
-    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
-    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
-    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
-    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
-    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
-    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
-    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
-    asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");asm volatile ("nop");
-#endif
 
     LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
     gpio_probe_and_set(PIN_PORT, PIN_PIN, PIN_MODER | PIN_PORT->MODER);
