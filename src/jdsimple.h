@@ -77,6 +77,10 @@ int txq_is_idle(void);
 void *txq_push(unsigned service_num, unsigned service_cmd, unsigned service_arg, const void *data,
                unsigned service_size);
 
+void acc_init(void);
+void acc_process(void);
+
+
 #ifdef __cplusplus
 }
 #endif
