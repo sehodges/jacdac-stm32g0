@@ -84,8 +84,6 @@ static void tick() {
     tim_set_timer(10000, tick);
 }
 
-static void spi_done() {}
-
 #define NUM_PIXELS 10
 static uint32_t px_buffer[(NUM_PIXELS * 9 + 8) / 4];
 

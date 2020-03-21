@@ -71,6 +71,12 @@ void pwm_set_duty(uint32_t duty);
 // jdapp.c
 void app_process(void);
 
+// txq.c
+void txq_flush(void);
+int txq_is_idle(void);
+void *txq_push(unsigned service_num, unsigned service_cmd, unsigned service_arg, const void *data,
+               unsigned service_size);
+
 #ifdef __cplusplus
 }
 #endif

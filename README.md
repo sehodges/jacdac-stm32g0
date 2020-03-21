@@ -41,41 +41,77 @@ hash the results and use that as a random seed.
 Other option is a floating ADC.
 Yet another is timing pin capacitance.
 
-## Packets
+## Frames and Packets
+
+All data is little endian.
+
+A JACDAC frame contains one or more JACDAC packets.
 
 ```c
-typedef struct {
-    uint16_t crc;
-    uint8_t size; // of data[]
-    uint8_t service_number;
-
-    uint16_t service_command;
-    uint16_t service_arg;
+struct _jd_frame_t {
+    uint16_t frame_crc;
+    uint8_t frame_size;
+    uint8_t frame_flags;
 
     uint64_t device_identifier;
 
-    uint8_t data[0];
-} __attribute((__packed__)) __attribute__((aligned(4))) jd_packet_t;
+    uint8_t data[JD_SERIAL_PAYLOAD_SIZE + 4]; // the actual size is frame_size, this is max
+} __attribute__((__packed__, aligned(4)));
+typedef struct _jd_frame_t jd_frame_t;
 ```
 
 |Offset | Size | Description
 |------:|-----:| ------------------------------------
 |     0 |    2 | CRC-16-CCITT of all following data
-|     2 |    1 | size of the payload, `N`
-|     3 |    1 | service number
-|     4 |    2 | service command
-|     6 |    2 | service argument
-|     8 |    8 | device identifier
-|    16 |  `N` | payload
+|     2 |    1 | size of the payload (`data[]` field), `N`
+|     3 |    1 | frame flags
+|     4 |    8 | device identifier
+|    12 |  `N` | payload
 
-All data is little endian.
-
-Total size of the packet is thus `N + 16`.
+Total size of the frame is thus `N + 12`.
 The CRC covers all data from byte 2 on, in both header and payload,
-and it is typical [CRC-16-CCITT](https://en.wikipedia.org/wiki/Cyclic_redundancy_check).
+and it is typical [CRC-16-CCITT](https://en.wikipedia.org/wiki/Cyclic_redundancy_check)
+(there is an efficient implementation in this repo, and it's also often supported
+by hardware).
+
+Packets have the following format:
+
+|Offset | Size | Description
+|------:|-----:| ------------------------------------
+|     0 |    1 | size of data, `M`
+|     1 |    1 | service number
+|     2 |    1 | service command
+|     3 |    1 | service argument
+|     4 |  `M` | data
+
+Packets are layed out in the `data[]` field of the frame.
+They are padded so they start at 4 byte boundary (there is no padding if `M` is divisible by 4).
+The frame header (including `device_identifier`) is **not** repeated.
+
+The packets logically share the `device_identifier` and `flags`.
+Typically, packets are uncompressed in place, and the following structure is used
+to handle them.
+
+```c
+struct _jd_packet_t {
+    uint16_t frame_crc;
+    uint8_t frame_size;
+    uint8_t frame_flags;
+
+    uint64_t device_identifier;
+
+    uint8_t service_size;
+    uint8_t service_number;
+    uint8_t service_command;
+    uint8_t service_arg;
+
+    uint8_t data[JD_SERIAL_PAYLOAD_SIZE]; // the actual size is service_size, this is max
+} __attribute__((__packed__, aligned(4)));
+typedef struct _jd_packet_t jd_packet_t;
+```
 
 To keep the total size of packet under `255` (which is DMA limit on some hardware)
-and aligned to 4, the maximum `N` is `236`.
+and aligned to 4, `JD_SERIAL_PAYLOAD_SIZE` is `236`.
 
 ## Physical layer
 
