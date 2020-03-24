@@ -1,16 +1,34 @@
 #include "jdsimple.h"
 
-static uint32_t announceData[] = {
+static uint32_t myServices[] = {
     JD_SERVICE_CLASS_CTRL,          // 0
     JD_SERVICE_CLASS_ACCELEROMETER, // 1
 };
 
 uint32_t now;
 
+static void identify(int num) {
+    static uint8_t id_counter;
+    static uint32_t nextblink;
+    if (num)
+        id_counter = num;
+    if (!id_counter)
+        return;
+    if (!should_sample(&nextblink, 150000))
+        return;
+
+    id_counter--;
+    led_blink(50);
+}
+
 void app_queue_annouce() {
-    led_toggle();
-    txq_push(JD_SERVICE_NUMBER_CTRL, JD_CMD_ADVERTISEMENT_DATA, 0, announceData,
-             sizeof(announceData));
+    static uint8_t ledcnt;
+    if (++ledcnt >= 3) {
+        led_blink(1);
+        ledcnt = 0;
+    }
+
+    txq_push(JD_SERVICE_NUMBER_CTRL, JD_CMD_ADVERTISEMENT_DATA, 0, myServices, sizeof(myServices));
 }
 
 #ifdef CNT_FLOOD
@@ -24,6 +42,8 @@ void app_process() {
 
     acc_process();
 
+    identify(0);
+
 #ifdef CNT_FLOOD
     if (txq_is_idle()) {
         cnt_count++;
@@ -32,6 +52,17 @@ void app_process() {
 #endif
 
     txq_flush();
+}
+
+static void handle_ctrl_packet(jd_packet_t *pkt) {
+    switch (pkt->service_command) {
+    case JD_CMD_ADVERTISEMENT_DATA:
+        app_queue_annouce();
+        break;
+    case JD_CMD_CTRL_IDENTIFY:
+        identify(7);
+        break;
+    }
 }
 
 static void handle_packet(jd_packet_t *pkt) {
@@ -53,7 +84,28 @@ static void handle_packet(jd_packet_t *pkt) {
     }
 #endif
 
+    if (!(pkt->flags & JD_FRAME_FLAG_COMMAND))
+        return;
+
+    bool matched_devid = pkt->device_identifier == device_id();
+
+    if (pkt->flags & JD_FRAME_FLAG_IDENTIFIER_IS_SERVICE_CLASS) {
+        for (int i = 0; i < sizeof(myServices) / sizeof(myServices[0]); ++i) {
+            if (pkt->device_identifier == myServices[i]) {
+                pkt->service_number = i;
+                matched_devid = true;
+                break;
+            }
+        }
+    }
+
+    if (!matched_devid)
+        return;
+
     switch (pkt->service_number) {
+    case JD_SERVICE_NUMBER_CTRL:
+        handle_ctrl_packet(pkt);
+        break;
     case ACC_SERVICE_NUM:
         acc_handle_packet(pkt);
         break;

@@ -28,6 +28,7 @@ extern "C" {
 // main.c
 void led_toggle(void);
 void led_set(int state);
+void led_blink(int ms);
 
 // utils.c
 int itoa(int n, char *s);

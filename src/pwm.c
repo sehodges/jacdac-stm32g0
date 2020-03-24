@@ -7,11 +7,12 @@ struct TimDesc {
 };
 
 static const struct TimDesc tims[] = {
-    {TIM14, 1, RCC_APB1ENR_TIM14EN}, //
-    {TIM3, 1, RCC_APB1ENR_TIM3EN},   //
     {TIM1, 2, RCC_APB2ENR_TIM1EN},   //
+    {TIM2, 1, RCC_APB1ENR_TIM2EN},   //
+    {TIM3, 1, RCC_APB1ENR_TIM3EN},   //
+    {TIM14, 1, RCC_APB1ENR_TIM14EN}, //
     {TIM16, 2, RCC_APB2ENR_TIM16EN}, //
-    {TIM17, 2, RCC_APB2ENR_TIM17EN},
+    // {TIM17, 2, RCC_APB2ENR_TIM17EN}, // used in tim.c, skip here
 };
 
 struct PinPWM {
@@ -21,7 +22,6 @@ struct PinPWM {
     TIM_TypeDef *tim;
 };
 
-// TIM17 used in tim.c
 static const struct PinPWM pins[] = {
     {PA_1, 2, LL_GPIO_AF_2, TIM2},  // LED on jdm-v2
     {PA_3, 4, LL_GPIO_AF_2, TIM2},  // POWER on jdm-v2
