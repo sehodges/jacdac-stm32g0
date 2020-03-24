@@ -3,7 +3,7 @@
 #define PORT(pin) ((GPIO_TypeDef *)(GPIOA_BASE + (0x400 * (pin >> 4))))
 #define PIN(pin) (1 << ((pin)&0xf))
 
-#if defined(JDM_V0)
+#if defined(JDM_V0) || defined(JDM_V2)
 #define UART_PIN PA_9
 #define PIN_AF LL_GPIO_AF_1
 #define USART_IDX 1
