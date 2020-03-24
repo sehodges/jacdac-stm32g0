@@ -3,17 +3,22 @@
 static uint32_t announceData[] = {0, 2000};
 
 void app_queue_annouce() {
+    led_toggle();
     txq_push(JD_SERVICE_NUMBER_CTRL, JD_CMD_ADVERTISEMENT_DATA, 0, announceData,
              sizeof(announceData));
 }
 
+#ifdef CNT_FLOOD
 static uint32_t cnt_count;
+#endif
 
 void app_process() {
+#ifdef CNT_FLOOD
     if (txq_is_idle()) {
         cnt_count++;
         txq_push(0x42, 0x80, 0, &cnt_count, sizeof(cnt_count));
     }
+#endif
 
     txq_flush();
 }
@@ -44,7 +49,7 @@ int app_handle_frame(jd_frame_t *frame) {
         txq_push(JD_SERVICE_NUMBER_CRC_ACK, frame->crc & 0xff, frame->crc >> 8, NULL, 0);
 
     for (;;) {
-        handle_packet((jd_packet_t*)frame);
+        handle_packet((jd_packet_t *)frame);
         if (!jd_shift_frame(frame))
             break;
     }
