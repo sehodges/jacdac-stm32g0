@@ -176,8 +176,8 @@ void acc_hw_init() {
     pin_set(PIN_ACC_CS, 1);
     pin_set(PIN_ACC_VCC, 1);
 
-    target_wait_us(
-        250); // 9us is enough; datasheet claims 250us for I2C ready and 2ms for conversion ready
+    // 9us is enough; datasheet claims 250us for I2C ready and 2ms for conversion ready
+    target_wait_us(250);
 
     int v = readReg(REG_CHIP_ID);
     DMESG("acc id: %x", v);

@@ -4,8 +4,20 @@
 // https://github.com/lancaster-university/codal-core/blob/master/source/driver-models/Accelerometer.cpp
 // Copyright (c) 2017 Lancaster University - MIT License
 
+/*
+MakeCode accelerator position:
+Laying flat: 0,0,-1000
+Standing on left edge: -1000,0,0
+Standing on bottom edge: 0,1000,0
+*/
+
 void acc_hw_get(int16_t sample[3]);
 void acc_hw_init();
+
+// values for QMA7981
+#define SAMPLING_PERIOD (7695 * 2) // 64.98Hz
+#define MAX_RANGE 32
+#define DEFAULT_RANGE 8
 
 #define ACCELEROMETER_EVT_NONE 0
 #define ACCELEROMETER_EVT_TILT_UP 1
@@ -48,14 +60,13 @@ struct ShakeHistory {
 static sensor_state_t sensor;
 static struct Point sample;
 static struct ShakeHistory shake;
-static uint32_t samplingPeriod, nextSample;
+static uint32_t nextSample;
 static uint16_t g_events;
 static uint8_t sigma, impulseSigma;
 static uint16_t currentGesture, lastGesture;
 
 void acc_init() {
     acc_hw_init();
-    samplingPeriod = 7695 * 2; // 64.98Hz
 }
 
 static void emit_event(int ev) {
@@ -205,7 +216,7 @@ static void process_events() {
 }
 
 void acc_process() {
-    if (!should_sample(&nextSample, samplingPeriod))
+    if (!should_sample(&nextSample, SAMPLING_PERIOD))
         return;
 
     acc_hw_get(&sample.x);
@@ -219,4 +230,3 @@ void acc_handle_packet(jd_packet_t *pkt) {
     if (sensor_should_stream(&sensor))
         txq_push(ACC_SERVICE_NUM, JD_CMD_GET_STATE, 0, &sample, sizeof(sample));
 }
-
