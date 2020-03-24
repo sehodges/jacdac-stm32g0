@@ -69,8 +69,8 @@ void pin_setup_output_af(int pin, int af);
 void adc_init_random(void);
 
 // pwm.c
-void pwm_init(uint32_t period, uint32_t duty);
-void pwm_set_duty(uint32_t duty);
+uint8_t pwm_init(uint8_t pin, uint32_t period, uint32_t duty);
+void pwm_set_duty(uint8_t pwm_id, uint32_t duty);
 
 // jdapp.c
 void app_process(void);
