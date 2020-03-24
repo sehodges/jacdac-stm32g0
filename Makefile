@@ -9,7 +9,7 @@ JD_CORE = jacdac-core
 CUBE = STM32Cube$(SERIES)
 DRV = $(CUBE)/Drivers
 DEFINES = -DUSE_FULL_ASSERT -DUSE_FULL_LL_DRIVER -DSTM32$(SERIES) -DDEVICE_DMESG_BUFFER_SIZE=1024
-WARNFLAGS = -Wall
+WARNFLAGS = -Wall -Wno-strict-aliasing
 CFLAGS = $(DEFINES) \
 	-mthumb -mfloat-abi=soft  \
 	-Os -g3 -Wall -ffunction-sections -fdata-sections \

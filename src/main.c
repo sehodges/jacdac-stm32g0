@@ -146,8 +146,6 @@ int main(void) {
             lastBlink = tim_get_micros();
             // led_toggle();
 
-            acc_process();
-
 #ifdef PWM_TEST
             d++;
             if (d > 5)

@@ -79,8 +79,39 @@ int txq_is_idle(void);
 void *txq_push(unsigned service_num, unsigned service_cmd, unsigned service_arg, const void *data,
                unsigned service_size);
 
+extern uint32_t now;
+
+// check if given timestamp is already in the past, regardless of overflows on 'now'
+// the moment has to be no more than ~500 seconds in the past
+static inline bool in_past(uint32_t moment) {
+    return ((now - moment) >> 29) == 0;
+}
+static inline bool in_future(uint32_t moment) {
+    return !in_past(moment);
+}
+
+// keep sampling at period, using state at *sample
+bool should_sample(uint32_t *sample, uint32_t period);
+
+// sensor helpers
+struct sensor_state {
+    uint16_t status;
+    uint32_t sample_interval;
+    uint32_t next_sample;
+};
+typedef struct sensor_state sensor_state_t;
+
+#define SENSOR_STREAMING 0x01
+
+int sensor_handle_packet(sensor_state_t *state, jd_packet_t *pkt);
+int sensor_should_stream(sensor_state_t *state);
+
+
+    // services
+#define ACC_SERVICE_NUM 1
 void acc_init(void);
 void acc_process(void);
+void acc_handle_packet(jd_packet_t *pkt);
 
 #ifdef __cplusplus
 }

@@ -18,10 +18,6 @@ uint64_t tim_get_micros() {
     }
 }
 
-uint16_t tim_get_micros16() {
-    return TIMx->CNT;
-}
-
 static volatile cb_t timer_cb;
 
 void tim_set_timer(int delta, cb_t cb) {

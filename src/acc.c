@@ -45,20 +45,23 @@ struct ShakeHistory {
     uint8_t timer;
 };
 
+static sensor_state_t sensor;
 static struct Point sample;
 static struct ShakeHistory shake;
-static uint16_t samplingPeriod, nextSample;
+static uint32_t samplingPeriod, nextSample;
 static uint16_t g_events;
 static uint8_t sigma, impulseSigma;
 static uint16_t currentGesture, lastGesture;
 
 void acc_init() {
     acc_hw_init();
-    samplingPeriod = 1000000 / 65;
+    samplingPeriod = 7695 * 2; // 64.98Hz
 }
 
 static void emit_event(int ev) {
-    // ... emit ...
+    if (ev & ~0xff)
+        jd_panic();
+    txq_push(ACC_SERVICE_NUM, JD_CMD_EVENT, ev, NULL, 0);
 }
 
 static void emit_g_event(int ev) {
@@ -202,10 +205,18 @@ static void process_events() {
 }
 
 void acc_process() {
-    uint16_t now = tim_get_micros16();
-    if (now < nextSample)
+    if (!should_sample(&nextSample, samplingPeriod))
         return;
-    nextSample += samplingPeriod;
 
     acc_hw_get(&sample.x);
+
+    process_events();
 }
+
+void acc_handle_packet(jd_packet_t *pkt) {
+    if (sensor_handle_packet(&sensor, pkt))
+        return;
+    if (sensor_should_stream(&sensor))
+        txq_push(ACC_SERVICE_NUM, JD_CMD_GET_STATE, 0, &sample, sizeof(sample));
+}
+
