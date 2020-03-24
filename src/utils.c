@@ -84,7 +84,7 @@ int itoa(int n, char *s) {
 }
 
 RAM_FUNC
-static void do_wait_us(int n) {
+void target_wait_cycles(int n) {
     __asm__ __volatile__(".syntax unified\n"
                          "1:              \n"
                          "   subs %0, #1   \n" // subtract 1 from %0 (n)
@@ -105,7 +105,7 @@ void target_wait_us(uint32_t n) {
 #else
 #error "define clock rate"
 #endif
-    do_wait_us(n);
+    target_wait_cycles(n);
 }
 
 uint32_t device_id_hash() {

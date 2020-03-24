@@ -31,6 +31,8 @@ void led_set(int state);
 int itoa(int n, char *s);
 int string_reverse(char *s);
 uint64_t device_id(void);
+RAM_FUNC
+void target_wait_cycles(int n);
 
 // exti.c
 void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback);
@@ -79,7 +81,6 @@ void *txq_push(unsigned service_num, unsigned service_cmd, unsigned service_arg,
 
 void acc_init(void);
 void acc_process(void);
-
 
 #ifdef __cplusplus
 }
