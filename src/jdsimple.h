@@ -13,9 +13,11 @@
 #error "invalid CPU"
 #endif
 
+#include "board.h"
 #include "dmesg.h"
 #include "pinnames.h"
 #include "jdlow.h"
+#include "services.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -3,26 +3,9 @@
 #define PORT(pin) ((GPIO_TypeDef *)(GPIOA_BASE + (0x400 * (pin >> 4))))
 #define PIN(pin) (1 << ((pin)&0xf))
 
-#if defined(JDM_V0) || defined(JDM_V2)
-#define UART_PIN PA_9
-#define PIN_AF LL_GPIO_AF_1
-#define USART_IDX 1
-#elif USART_IDX == 2 || defined(STM32F0)
-#define UART_PIN PA_2
-#define PIN_AF LL_GPIO_AF_1
-#elif USART_IDX == 1
-#define UART_PIN PB_6
-#define PIN_AF LL_GPIO_AF_0
-#else
-// generic
-#error "bad usart"
-#endif
-
 #define PIN_PORT PORT(UART_PIN)
 #define PIN_PIN PIN(UART_PIN)
 #define PIN_MODER (1 << (UART_PIN & 0xf) * 2)
-
-#define USART_IDX 1
 
 #if USART_IDX == 1
 #define USARTx USART1
@@ -63,9 +46,9 @@ static void uartOwnsPin(int doesIt) {
     if (doesIt) {
         LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_ALTERNATE);
         if ((UART_PIN & 0xf) <= 7)
-            LL_GPIO_SetAFPin_0_7(PIN_PORT, PIN_PIN, PIN_AF);
+            LL_GPIO_SetAFPin_0_7(PIN_PORT, PIN_PIN, UART_PIN_AF);
         else
-            LL_GPIO_SetAFPin_8_15(PIN_PORT, PIN_PIN, PIN_AF);
+            LL_GPIO_SetAFPin_8_15(PIN_PORT, PIN_PIN, UART_PIN_AF);
     } else {
         LL_GPIO_SetPinMode(PIN_PORT, PIN_PIN, LL_GPIO_MODE_INPUT);
         exti_clear(PIN_PIN);

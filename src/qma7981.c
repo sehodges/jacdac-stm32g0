@@ -1,20 +1,5 @@
 #include "jdsimple.h"
 
-/*
-MakeCode accelerator position:
-Laying flat: 0,0,-1000
-Standing on left edge: -1000,0,0
-Standing on bottom edge: 0,1000,0
-*/
-
-#define PIN_VCC PB_4
-#define PIN_MISO PB_6
-#define PIN_MOSI PB_5
-#define PIN_SCK PB_7
-#define PIN_CS PB_8
-//#define PIN_CS -1
-
-#define PORT GPIOB
 #define MASK_SET(p) (1 << ((p)&0xf))
 #define MASK_CLR(p) (1 << (((p)&0xf) + 16))
 
@@ -78,17 +63,17 @@ Standing on bottom edge: 0,1000,0
 
 #define SEND_BIT(n)                                                                                \
     NOP;                                                                                           \
-    PORT->BSRR = MASK_CLR(PIN_MOSI) | (((b >> n) & 1) << (PIN_MOSI & 0xf));                        \
-    PORT->BSRR = MASK_SET(PIN_SCK);                                                                \
+    ACC_PORT->BSRR = MASK_CLR(PIN_ACC_MOSI) | (((b >> n) & 1) << (PIN_ACC_MOSI & 0xf));            \
+    ACC_PORT->BSRR = MASK_SET(PIN_ACC_SCK);                                                        \
     NOP;                                                                                           \
-    PORT->BSRR = MASK_CLR(PIN_SCK)
+    ACC_PORT->BSRR = MASK_CLR(PIN_ACC_SCK)
 
 #define RECV_BIT(n)                                                                                \
     NOP;                                                                                           \
-    PORT->BSRR = MASK_SET(PIN_SCK);                                                                \
+    ACC_PORT->BSRR = MASK_SET(PIN_ACC_SCK);                                                        \
     NOP;                                                                                           \
-    b |= ((PORT->IDR >> (PIN_MISO & 0xf)) & 1) << n;                                               \
-    PORT->BSRR = MASK_CLR(PIN_SCK)
+    b |= ((ACC_PORT->IDR >> (PIN_ACC_MISO & 0xf)) & 1) << n;                                       \
+    ACC_PORT->BSRR = MASK_CLR(PIN_ACC_SCK)
 
 static void send(const uint8_t *src, uint32_t len) {
     // target_wait_us(5);
@@ -103,7 +88,7 @@ static void send(const uint8_t *src, uint32_t len) {
         SEND_BIT(1);
         SEND_BIT(0);
     }
-    pin_set(PIN_MOSI, 0);
+    pin_set(PIN_ACC_MOSI, 0);
 }
 
 static void recv(uint8_t *dst, uint32_t len) {
@@ -132,13 +117,13 @@ static void writeReg(uint8_t reg, uint8_t val) {
         0x01, // len low,
         val,  // data
     };
-    pin_set(PIN_CS, 0);
+    pin_set(PIN_ACC_CS, 0);
     send(cmd, sizeof(cmd));
-    pin_set(PIN_CS, 1);
+    pin_set(PIN_ACC_CS, 1);
 }
 
 static void readData(uint8_t reg, uint8_t *dst, int len) {
-    pin_set(PIN_CS, 0);
+    pin_set(PIN_ACC_CS, 0);
     uint8_t cmd[] = {
         0xAF, // IDR
         0x00, // reg high
@@ -149,7 +134,7 @@ static void readData(uint8_t reg, uint8_t *dst, int len) {
 
     send(cmd, sizeof(cmd));
     recv(dst, len);
-    pin_set(PIN_CS, 1);
+    pin_set(PIN_ACC_CS, 1);
 }
 
 static int readReg(uint8_t reg) {
@@ -180,18 +165,19 @@ void acc_hw_get(int16_t sample[3]) {
 }
 
 void acc_hw_init() {
-    pin_setup_output(PIN_MOSI);
-    pin_setup_output(PIN_SCK);
-    pin_setup_input(PIN_MISO, -1);
+    pin_setup_output(PIN_ACC_MOSI);
+    pin_setup_output(PIN_ACC_SCK);
+    pin_setup_input(PIN_ACC_MISO, -1);
 
-    pin_setup_output(PIN_VCC);
-    pin_setup_output(PIN_CS);
-    //return;
+    pin_setup_output(PIN_ACC_VCC);
+    pin_setup_output(PIN_ACC_CS);
+    // return;
 
-    pin_set(PIN_CS, 1);
-    pin_set(PIN_VCC, 1);
+    pin_set(PIN_ACC_CS, 1);
+    pin_set(PIN_ACC_VCC, 1);
 
-    target_wait_us(250); // 9us is enough; datasheet claims 250us for I2C ready and 2ms for conversion ready
+    target_wait_us(
+        250); // 9us is enough; datasheet claims 250us for I2C ready and 2ms for conversion ready
 
     int v = readReg(REG_CHIP_ID);
     DMESG("acc id: %x", v);

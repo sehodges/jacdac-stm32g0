@@ -15,16 +15,12 @@ CFLAGS = $(DEFINES) \
 	-Os -g3 -Wall -ffunction-sections -fdata-sections \
 	$(WARNFLAGS)
 BUILT = built/$(TARGET)
-HEADERS = $(wildcard src/*.h) $(wildcard $(JD_CORE)/*.h)
+HEADERS = $(wildcard src/*.h) $(wildcard $(JD_CORE)/*.h) $(wildcard targets/$(TARGET)/*.h)
 
 include targets/$(TARGET)/config.mk
 BASE_TARGET ?= $(TARGET)
 
 ifneq ($(BMP),)
-
-
-
-
 BMP_PORT = $(shell ls -1 /dev/cu.usbmodem????????1 | head -1)
 endif
 
