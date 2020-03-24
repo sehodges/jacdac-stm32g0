@@ -144,7 +144,7 @@ int main(void) {
     while (1) {
         if (tim_get_micros() - lastBlink > 300000) {
             lastBlink = tim_get_micros();
-            led_toggle();
+            // led_toggle();
 
             acc_process();
 

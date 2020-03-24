@@ -7,6 +7,7 @@
 
 static volatile uint64_t timeoff;
 
+// takes around 1us
 uint64_t tim_get_micros() {
     while (1) {
         uint32_t v0 = TIMx->CNT;
@@ -15,6 +16,10 @@ uint64_t tim_get_micros() {
         if (v0 <= v1)
             return off + v1;
     }
+}
+
+uint16_t tim_get_micros16() {
+    return TIMx->CNT;
 }
 
 static volatile cb_t timer_cb;
