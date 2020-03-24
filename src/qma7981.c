@@ -14,6 +14,10 @@ Standing on bottom edge: 0,1000,0
 #define PIN_CS PB_8
 //#define PIN_CS -1
 
+#define PORT GPIOB
+#define MASK_SET(p) (1 << ((p)&0xf))
+#define MASK_CLR(p) (1 << (((p)&0xf) + 16))
+
 #define REG_CHIP_ID 0x00
 #define REG_DX 0x01
 #define REG_DY 0x03
@@ -59,39 +63,67 @@ Standing on bottom edge: 0,1000,0
 #define QMAX981_RANGE_16G 0x08
 #define QMAX981_RANGE_32G 0x0f
 
+#define QMAX981_BW_8HZ 0xE7
+#define QMAX981_BW_16HZ 0xE6
+#define QMAX981_BW_32HZ 0xE5
+#define QMAX981_BW_65HZ 0xE0
+#define QMAX981_BW_130HZ 0xE1
+#define QMAX981_BW_258HZ 0xE2
+#define QMAX981_BW_513HZ 0xE3
+
+// 1 is around 1MHz - still works up to 1.25MHz or so
+// 5 is 660kHz
+// 10 is 430kHz
+#define NOP target_wait_cycles(5)
+
+#define SEND_BIT(n)                                                                                \
+    NOP;                                                                                           \
+    PORT->BSRR = MASK_CLR(PIN_MOSI) | (((b >> n) & 1) << (PIN_MOSI & 0xf));                        \
+    PORT->BSRR = MASK_SET(PIN_SCK);                                                                \
+    NOP;                                                                                           \
+    PORT->BSRR = MASK_CLR(PIN_SCK)
+
+#define RECV_BIT(n)                                                                                \
+    NOP;                                                                                           \
+    PORT->BSRR = MASK_SET(PIN_SCK);                                                                \
+    NOP;                                                                                           \
+    b |= ((PORT->IDR >> (PIN_MISO & 0xf)) & 1) << n;                                               \
+    PORT->BSRR = MASK_CLR(PIN_SCK)
+
 static void send(const uint8_t *src, uint32_t len) {
-    target_wait_us(5);
+    // target_wait_us(5);
     for (int i = 0; i < len; ++i) {
-        uint8_t mask = 0x80;
         uint8_t b = src[i];
-        while (mask) {
-            pin_set(PIN_MOSI, b & mask ? 1 : 0);
-            pin_set(PIN_SCK, 1);
-            pin_set(PIN_SCK, 0);
-            mask >>= 1;
-        }
+        SEND_BIT(7);
+        SEND_BIT(6);
+        SEND_BIT(5);
+        SEND_BIT(4);
+        SEND_BIT(3);
+        SEND_BIT(2);
+        SEND_BIT(1);
+        SEND_BIT(0);
     }
     pin_set(PIN_MOSI, 0);
 }
 
 static void recv(uint8_t *dst, uint32_t len) {
-    target_wait_us(5);
+    // target_wait_us(5);
     for (int i = 0; i < len; ++i) {
-        uint8_t mask = 0x80;
         uint8_t b = 0x00;
-        while (mask) {
-            pin_set(PIN_SCK, 1);
-            if (pin_get(PIN_MISO))
-                b |= mask;
-            pin_set(PIN_SCK, 0);
-            mask >>= 1;
-        }
+        RECV_BIT(7);
+        RECV_BIT(6);
+        RECV_BIT(5);
+        RECV_BIT(4);
+        RECV_BIT(3);
+        RECV_BIT(2);
+        RECV_BIT(1);
+        RECV_BIT(0);
         dst[i] = b;
     }
 }
 
 static void writeReg(uint8_t reg, uint8_t val) {
-    target_wait_us(200);
+    // target_wait_us(200);
     uint8_t cmd[] = {
         0xAE, // IDW
         0x00, // reg high
@@ -129,54 +161,49 @@ static int readReg(uint8_t reg) {
 static void init_chip() {
     writeReg(REG_PM, 0x80);
     writeReg(REG_SR, 0xB6);
-    target_wait_us(500);
+    target_wait_us(100);
     writeReg(REG_SR, 0x00);
     writeReg(REG_PM, 0x80);
+    writeReg(REG_INT_CFG, 0x1C | (1 << 5)); // disable I2C
     writeReg(REG_FSR, QMAX981_RANGE_8G);
     writeReg(REG_BW, 0xE0); // 65Hz
-
-#if 0
-    // not sure what this is
-    writeReg(0x5f, 0x80); // enable test mode,take control the FSM
-    writeReg(0x5f, 0x00); // normal mode
-#endif
+    // 0xE1 130Hz
+    // 0xE2 260Hz
 }
 
-static uint64_t nextRead = 0;
-void acc_process() {
-    if (tim_get_micros() < nextRead)
-        return;
-    nextRead = tim_get_micros() + 500000;
-
+void acc_hw_get(int16_t sample[3]) {
     int16_t data[3];
     readData(REG_DX, (uint8_t *)data, 6);
-    int x = data[1] >> 2, y = -data[0] >> 2, z = -data[2] >> 2;
-    DMESG("acc %d %d %d", x,y,z);
+    sample[0] = data[1] >> 2;
+    sample[1] = -data[0] >> 2;
+    sample[2] = -data[2] >> 2;
 }
 
-void acc_init() {
-#if 1
+void acc_hw_init() {
     pin_setup_output(PIN_MOSI);
     pin_setup_output(PIN_SCK);
     pin_setup_input(PIN_MISO, -1);
-#endif
 
     pin_setup_output(PIN_VCC);
     pin_setup_output(PIN_CS);
+    //return;
+
     pin_set(PIN_CS, 1);
     pin_set(PIN_VCC, 1);
 
-    target_wait_us(10000);
+    target_wait_us(250); // 9us is enough; datasheet claims 250us for I2C ready and 2ms for conversion ready
 
     int v = readReg(REG_CHIP_ID);
-    DMESG("acc id: %d", v);
+    DMESG("acc id: %x", v);
 
     if (0xe0 <= v && v <= 0xe9) {
         if (v >= 0xe8) {
             // v2
         }
-        init_chip();
     } else {
         DMESG("invalid chip");
+        jd_panic();
     }
+
+    init_chip();
 }
