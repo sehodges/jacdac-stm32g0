@@ -1,6 +1,9 @@
 #include "jdsimple.h"
 
-static uint32_t announceData[] = {0, 2000};
+static uint32_t announceData[] = {
+    JD_SERVICE_CLASS_CTRL,          // 0
+    JD_SERVICE_CLASS_ACCELEROMETER, // 1
+};
 
 uint32_t now;
 
@@ -12,6 +15,8 @@ void app_queue_annouce() {
 
 #ifdef CNT_FLOOD
 static uint32_t cnt_count;
+static uint32_t prevCnt;
+uint32_t numErrors, numPkts;
 #endif
 
 void app_process() {
@@ -29,15 +34,13 @@ void app_process() {
     txq_flush();
 }
 
-static uint32_t prevCnt;
-uint32_t numErrors, numPkts;
-
 static void handle_packet(jd_packet_t *pkt) {
-    // DMESG("handle pkt; dst=%x/%d sz=%d", (uint32_t)pkt->header.device_identifier,
-    //      pkt->header.service_number, pkt->header.size);
-    
-    numPkts++;
+// DMESG("handle pkt; dst=%x/%d sz=%d", (uint32_t)pkt->header.device_identifier,
+//      pkt->header.service_number, pkt->header.size);
+
+#ifdef CNT_FLOOD
     if (pkt->service_number == 0x42) {
+        numPkts++;
         uint32_t c;
         memcpy(&c, pkt->data, sizeof(c));
         if (prevCnt && prevCnt + 1 != c) {
@@ -47,8 +50,13 @@ static void handle_packet(jd_packet_t *pkt) {
             DMESG("ERR %d/%d %d", numErrors, numPkts, numErrors * 10000 / numPkts);
         }
         prevCnt = c;
-    } else if (pkt->service_number == ACC_SERVICE_NUM) {
+    }
+#endif
+
+    switch (pkt->service_number) {
+    case ACC_SERVICE_NUM:
         acc_handle_packet(pkt);
+        break;
     }
 }
 
