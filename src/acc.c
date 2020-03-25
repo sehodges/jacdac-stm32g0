@@ -223,13 +223,16 @@ void acc_process() {
     acc_hw_get(&sample.x);
 
     process_events();
+
+    if (sensor_should_stream(&sensor))
+        txq_push(sensor.service_number, JD_CMD_GET_STATE, 0, &sample, sizeof(sample));
 }
 
 void acc_handle_packet(jd_packet_t *pkt) {
-    if (sensor_handle_packet(&sensor, pkt))
-        return;
-    if (sensor_should_stream(&sensor))
-        txq_push(pkt->service_number, JD_CMD_GET_STATE, 0, &sample, sizeof(sample));
+    //dump_pkt(pkt, "ACC");
+    //DMESG("Acc st=%x %dus %d %d", sensor.status, sensor.sample_interval, sensor.next_sample, now);
+
+    sensor_handle_packet(&sensor, pkt);
 }
 
 const host_service_t host_accelerometer = {
