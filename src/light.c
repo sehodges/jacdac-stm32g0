@@ -24,6 +24,7 @@ static struct light_state state;
 static uint32_t *pxbuffer;
 static uint16_t pxbuffer_allocated;
 static uint32_t nextFrame;
+static uint8_t in_tx;
 
 void light_init(uint8_t service_num) {
     state.hd.service_number = service_num;
@@ -112,14 +113,29 @@ static bool is_enabled() {
     return actuator_enabled(&state.hd) && config.numpixels > 0 && state.hd.intensity > 0;
 }
 
-static void do_nothing() {}
+static void show();
+static void tx_done() {
+    if (in_tx == 2) {
+        in_tx = 0;
+        show();
+    } else {
+        in_tx = 0;
+    }
+}
 
 static void set(uint32_t index, uint32_t color) {
     px_set(pxbuffer, index, state.hd.intensity, color);
 }
 
 static void show() {
-    px_tx(pxbuffer, PX_WORDS(config.numpixels) << 2, do_nothing);
+    target_disable_irq();
+    if (in_tx) {
+        in_tx = 2;
+    } else {
+        in_tx = 1;
+        px_tx(pxbuffer, PX_WORDS(config.numpixels) << 2, tx_done);
+    }
+    target_enable_irq();
 }
 
 static void set_all(uint32_t color) {
