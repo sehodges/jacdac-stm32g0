@@ -16,6 +16,8 @@ void app_queue_annouce() {
         ledcnt = 0;
     }
 
+    alloc_stack_check();
+
     uint32_t *dst =
         txq_push(JD_SERVICE_NUMBER_CTRL, JD_CMD_ADVERTISEMENT_DATA, 0, NULL, NUM_SERVICES * 4);
     if (!dst)

@@ -30,6 +30,7 @@ extern "C" {
 void led_toggle(void);
 void led_set(int state);
 void led_blink(int us);
+void fail_and_reset(void);
 
 // utils.c
 int itoa(int n, char *s);
@@ -84,6 +85,7 @@ void *txq_push(unsigned service_num, unsigned service_cmd, unsigned service_arg,
 // alloc.c
 void alloc_init(void);
 void *alloc(uint32_t size);
+void alloc_stack_check();
 
 extern uint32_t now;
 

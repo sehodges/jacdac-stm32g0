@@ -94,7 +94,6 @@ int main(void) {
         if (led_off_time && tim_get_micros() > led_off_time) {
             led_off_time = 0;
             led_set(0);
-            alloc(0);
         }
         app_process();
     }
@@ -105,6 +104,16 @@ void jd_panic(void) {
     target_disable_irq();
     while (1) {
         led_toggle();
-        target_wait_us(100000);
+        target_wait_us(70000);
     }
+}
+
+void fail_and_reset() {
+    DMESG("FAIL!");
+    target_disable_irq();
+    for (int i = 0; i < 20; ++i) {
+        led_toggle();
+        target_wait_us(70000);
+    }
+    NVIC_SystemReset();
 }
