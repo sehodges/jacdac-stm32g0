@@ -65,14 +65,15 @@ static uint16_t g_events;
 static uint8_t sigma, impulseSigma;
 static uint16_t currentGesture, lastGesture;
 
-void acc_init() {
+void acc_init(uint8_t service_num) {
+    sensor.service_number = service_num;
     acc_hw_init();
 }
 
 static void emit_event(int ev) {
     if (ev & ~0xff)
         jd_panic();
-    txq_push(ACC_SERVICE_NUM, JD_CMD_EVENT, ev, NULL, 0);
+    txq_push(sensor.service_number, JD_CMD_EVENT, ev, NULL, 0);
 }
 
 static void emit_g_event(int ev) {
@@ -228,5 +229,12 @@ void acc_handle_packet(jd_packet_t *pkt) {
     if (sensor_handle_packet(&sensor, pkt))
         return;
     if (sensor_should_stream(&sensor))
-        txq_push(ACC_SERVICE_NUM, JD_CMD_GET_STATE, 0, &sample, sizeof(sample));
+        txq_push(pkt->service_number, JD_CMD_GET_STATE, 0, &sample, sizeof(sample));
 }
+
+const host_service_t host_accelerometer = {
+    .service_class = JD_SERVICE_CLASS_ACCELEROMETER,
+    .init = acc_init,
+    .process = acc_process,
+    .handle_pkt = acc_handle_packet,
+};

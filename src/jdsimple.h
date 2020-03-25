@@ -18,6 +18,7 @@
 #include "pinnames.h"
 #include "jdlow.h"
 #include "services.h"
+#include "host.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,11 +46,6 @@ void exti_trigger(cb_t cb);
 #define exti_enable(pin) LL_EXTI_EnableIT_0_31(pin)
 #define exti_clear(pin) LL_EXTI_ClearFallingFlag_0_31(pin)
 
-// jdrouting.c
-typedef void (*pkt_handler_t)(void *userData, jd_packet_t *pkt);
-void jd_register_client(uint32_t serviceClass, pkt_handler_t handler, void *userData);
-void jd_register_host(uint32_t serviceClass, pkt_handler_t handler, void *userData);
-
 // dspi.c
 void dspi_init(void);
 void dspi_tx(const void *data, uint32_t numbytes, cb_t doneHandler);
@@ -75,6 +71,7 @@ void pwm_set_duty(uint8_t pwm_id, uint32_t duty);
 
 // jdapp.c
 void app_process(void);
+void app_init_services(void);
 
 // txq.c
 void txq_flush(void);
@@ -93,28 +90,6 @@ static inline bool in_future(uint32_t moment) {
     return !in_past(moment);
 }
 
-// keep sampling at period, using state at *sample
-bool should_sample(uint32_t *sample, uint32_t period);
-
-// sensor helpers
-struct sensor_state {
-    uint16_t status;
-    uint32_t sample_interval;
-    uint32_t next_sample;
-};
-typedef struct sensor_state sensor_state_t;
-
-#define SENSOR_STREAMING 0x01
-
-int sensor_handle_packet(sensor_state_t *state, jd_packet_t *pkt);
-int sensor_should_stream(sensor_state_t *state);
-
-
-    // services
-#define ACC_SERVICE_NUM 1
-void acc_init(void);
-void acc_process(void);
-void acc_handle_packet(jd_packet_t *pkt);
 
 #ifdef __cplusplus
 }

@@ -51,3 +51,38 @@ int sensor_should_stream(sensor_state_t *state) {
     return should_sample(&state->next_sample, state->sample_interval);
 }
 
+int actuator_handle_packet(actuator_state_t *state, jd_packet_t *pkt) {
+    int v0 = state->version;
+
+    switch (pkt->service_command) {
+    case JD_CMD_SET_STATE: {
+        int sz = pkt->service_size;
+        if (sz > state->size)
+            sz = state->size;
+        memcpy(state->data, pkt->data, sz);
+        state->version++;
+        break;
+    }
+    case JD_CMD_GET_STATE:
+        txq_push(pkt->service_number, JD_CMD_GET_STATE, 0, state->data, state->size);
+        break;
+    case JD_CMD_SET_ENABLED:
+        state->version++;
+        if (pkt->service_arg == 0)
+            state->status &= ~ACTUATOR_ENABLED;
+        else if (pkt->service_arg == 1)
+            state->status |= ACTUATOR_ENABLED;
+        break;
+    case JD_CMD_GET_ENABLED:
+        txq_push(pkt->service_number, JD_CMD_GET_ENABLED, state->status & ACTUATOR_ENABLED ? 1 : 0,
+                 NULL, 0);
+        break;
+    default:
+        return 0;
+    }
+
+    if (v0 != state->version)
+        return 2;
+
+    return 1;
+}

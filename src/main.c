@@ -55,7 +55,7 @@ void led_blink(int ms) {
     led_set(1);
 }
 
-#define NUM_PIXELS 10
+#define NUM_PIXELS 14
 static uint32_t px_buffer[(NUM_PIXELS * 9 + 8) / 4];
 
 void rainbow() {
@@ -83,7 +83,8 @@ int main(void) {
     adc_init_random(); // 300b
 
     jd_init();
-    acc_init();
+
+    app_init_services();
 
     while (1) {
         if (led_off_time && tim_get_micros() > led_off_time) {
