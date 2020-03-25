@@ -74,8 +74,7 @@ int actuator_handle_packet(actuator_state_t *state, jd_packet_t *pkt) {
             state->status |= ACTUATOR_ENABLED;
         break;
     case JD_CMD_GET_ENABLED:
-        txq_push(pkt->service_number, JD_CMD_GET_ENABLED, state->status & ACTUATOR_ENABLED ? 1 : 0,
-                 NULL, 0);
+        txq_push(pkt->service_number, JD_CMD_GET_ENABLED, actuator_enabled(state), NULL, 0);
         break;
     default:
         return 0;

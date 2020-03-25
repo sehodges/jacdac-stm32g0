@@ -13,20 +13,26 @@ struct _sensor_state {
 typedef struct _sensor_state sensor_state_t;
 
 #define SENSOR_STREAMING 0x01
+#define SENSOR_INITED 0x02
 
 int sensor_handle_packet(sensor_state_t *state, jd_packet_t *pkt);
 int sensor_should_stream(sensor_state_t *state);
 
 #define ACTUATOR_ENABLED 0x01
+#define ACTUATOR_INITED 0x02
 struct _actuator_state {
     uint8_t status;
     uint8_t size;
-    uint16_t version;
+    uint8_t service_number;
+    uint8_t version;
     uint8_t data[0];
 };
 typedef struct _actuator_state actuator_state_t;
 
 int actuator_handle_packet(actuator_state_t *state, jd_packet_t *pkt);
+static inline bool actuator_enabled(actuator_state_t *state) {
+    return (state->status & ACTUATOR_ENABLED) != 0;
+}
 
 typedef void (*pkt_handler_t)(jd_packet_t *pkt);
 typedef void (*service_fn_t)(uint8_t service_num);
