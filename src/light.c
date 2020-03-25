@@ -1,5 +1,9 @@
 #include "jdsimple.h"
 
+#define DEFAULT_INTENSITY 15
+#define DEFAULT_NUMPIXELS 14
+#define DEFAULT_MAXPOWER 200
+
 #define FRAME_TIME 50000
 
 struct light_state {
@@ -12,6 +16,7 @@ struct light_state {
 
 struct light_config {
     uint16_t numpixels;
+    uint16_t maxpower;
 };
 
 static struct light_config config;
@@ -23,7 +28,7 @@ static uint32_t nextFrame;
 void light_init(uint8_t service_num) {
     state.hd.service_number = service_num;
     state.hd.size = sizeof(state) - sizeof(state.hd);
-    state.hd.intensity = 20;
+    state.hd.intensity = DEFAULT_INTENSITY;
 }
 
 static inline uint32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
@@ -314,11 +319,6 @@ static void sync_state() {
 
     pin_set(PIN_PWR, 0);
 
-    if (!(state.hd.status & ACTUATOR_INITED)) {
-        state.hd.status |= ACTUATOR_INITED;
-        px_init();
-    }
-
     if (state.cmd < sizeof(animations) / sizeof(animations[0])) {
         cb_t f = animations[state.cmd];
         if (f)
@@ -327,10 +327,21 @@ static void sync_state() {
 }
 
 static void sync_config() {
+    if (!(state.hd.status & ACTUATOR_INITED)) {
+        state.hd.status |= ACTUATOR_INITED;
+        px_init();
+    }
+
+    if (config.numpixels == 0)
+        config.numpixels = DEFAULT_NUMPIXELS;
+    if (config.maxpower == 0)
+        config.maxpower = DEFAULT_MAXPOWER;
+
     if (config.numpixels > pxbuffer_allocated) {
         pxbuffer_allocated = config.numpixels;
         pxbuffer = alloc(PX_WORDS(pxbuffer_allocated) * 4);
     }
+
     sync_state();
 }
 
@@ -341,8 +352,13 @@ void light_handle_packet(jd_packet_t *pkt) {
         sync_config();
 
     r = actuator_handle_packet(&state.hd, pkt);
-    if (r == PKT_HANDLED_RW)
-        sync_state();
+    if (r == PKT_HANDLED_RW) {
+        if (!(state.hd.status & ACTUATOR_INITED)) {
+            sync_config();
+        } else {
+            sync_state();
+        }
+    }
 }
 
 const host_service_t host_light = {
