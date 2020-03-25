@@ -173,3 +173,16 @@ void *memset(void *dst, int v, size_t sz) {
 
     return dst;
 }
+
+uint32_t random_int(int max) {
+    if (max == 0)
+        return 0;
+    uint32_t mask = 0x1;
+    while (mask < max)
+        mask = (mask << 1) | 1;
+    for (;;) {
+        uint32_t v = jd_random() & mask;
+        if (v <= max)
+            return v;
+    }
+}

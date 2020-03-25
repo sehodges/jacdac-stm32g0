@@ -171,12 +171,12 @@ static inline void set_byte(uint8_t *dst, uint8_t v) {
     }
 }
 
-void px_set(const void *data, uint32_t index, uint32_t color) {
+void px_set(const void *data, uint32_t index, uint8_t intensity, uint32_t color) {
     uint8_t *dst = (uint8_t *)data + index * 9;
     // assume GRB
-    set_byte(dst, color >> 8);
-    set_byte(dst + 3, color);
-    set_byte(dst + 6, color >> 16);
+    set_byte(dst, (intensity * (color >> 8)) >> 8);
+    set_byte(dst + 3, (intensity * (color >> 0)) >> 8);
+    set_byte(dst + 6, (intensity * (color >> 16)) >> 8);
 }
 
 // this is only enabled for error events

@@ -1,5 +1,9 @@
 #pragma once
 
+#define PKT_UNHANDLED 0
+#define PKT_HANDLED_RO 1
+#define PKT_HANDLED_RW 2
+
 // keep sampling at period, using state at *sample
 bool should_sample(uint32_t *sample, uint32_t period);
 
@@ -24,10 +28,12 @@ struct _actuator_state {
     uint8_t status;
     uint8_t size;
     uint8_t service_number;
-    uint8_t version;
+    uint8_t intensity;
     uint8_t data[0];
 };
 typedef struct _actuator_state actuator_state_t;
+
+int handle_get_set(uint8_t get_cmd, void *state, int size, jd_packet_t *pkt);
 
 int actuator_handle_packet(actuator_state_t *state, jd_packet_t *pkt);
 static inline bool actuator_enabled(actuator_state_t *state) {

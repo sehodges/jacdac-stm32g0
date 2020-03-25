@@ -38,6 +38,7 @@ int string_reverse(char *s);
 uint64_t device_id(void);
 RAM_FUNC
 void target_wait_cycles(int n);
+uint32_t random_int(int max);
 
 // exti.c
 void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback);
@@ -53,7 +54,7 @@ void dspi_tx(const void *data, uint32_t numbytes, cb_t doneHandler);
 
 void px_init(void);
 void px_tx(const void *data, uint32_t numbytes, cb_t doneHandler);
-void px_set(const void *data, uint32_t index, uint32_t color);
+void px_set(const void *data, uint32_t index, uint8_t intensity, uint32_t color);
 #define PX_WORDS(NUM_PIXELS) (((NUM_PIXELS) * 9 + 8) / 4)
 
 // pins.c

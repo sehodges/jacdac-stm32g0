@@ -32,17 +32,15 @@ int sensor_handle_packet(sensor_state_t *state, jd_packet_t *pkt) {
         } else if (pkt->service_arg == 0) {
             state->status &= ~SENSOR_STREAMING;
         }
-        break;
+        return PKT_HANDLED_RW;
     case JD_CMD_GET_STREAMING:
         val = state->sample_interval / 1000;
         txq_push(pkt->service_number, JD_CMD_GET_STREAMING,
                  state->status & SENSOR_STREAMING ? 1 : 0, &val, 4);
-        break;
+        return PKT_HANDLED_RO;
     default:
-        return 0;
+        return PKT_UNHANDLED;
     }
-
-    return 1;
 }
 
 int sensor_should_stream(sensor_state_t *state) {
@@ -52,36 +50,38 @@ int sensor_should_stream(sensor_state_t *state) {
 }
 
 int actuator_handle_packet(actuator_state_t *state, jd_packet_t *pkt) {
-    int v0 = state->version;
+    int r = handle_get_set(JD_CMD_GET_STATE, state->data, state->size, pkt);
+    if (r)
+        return r;
 
     switch (pkt->service_command) {
-    case JD_CMD_SET_STATE: {
-        int sz = pkt->service_size;
-        if (sz > state->size)
-            sz = state->size;
-        memcpy(state->data, pkt->data, sz);
-        state->version++;
-        break;
-    }
-    case JD_CMD_GET_STATE:
-        txq_push(pkt->service_number, JD_CMD_GET_STATE, 0, state->data, state->size);
-        break;
     case JD_CMD_SET_ENABLED:
-        state->version++;
         if (pkt->service_arg == 0)
             state->status &= ~ACTUATOR_ENABLED;
         else if (pkt->service_arg == 1)
             state->status |= ACTUATOR_ENABLED;
-        break;
+        return PKT_HANDLED_RW;
     case JD_CMD_GET_ENABLED:
         txq_push(pkt->service_number, JD_CMD_GET_ENABLED, actuator_enabled(state), NULL, 0);
-        break;
+        return PKT_HANDLED_RO;
+    case JD_CMD_SET_INTENSITY:
+        state->intensity = pkt->service_arg;
+        return PKT_HANDLED_RW;
     default:
-        return 0;
+        return PKT_UNHANDLED;
     }
+}
 
-    if (v0 != state->version)
-        return 2;
-
-    return 1;
+int handle_get_set(uint8_t get_cmd, void *state, int size, jd_packet_t *pkt) {
+    if (pkt->service_command == get_cmd) {
+        txq_push(pkt->service_number, get_cmd, 0, state, size);
+        return PKT_HANDLED_RO;
+    } else if (pkt->service_command == get_cmd + 1) {
+        int sz = pkt->service_size;
+        if (sz > size)
+            sz = size;
+        memcpy(state, pkt->data, sz);
+        return PKT_HANDLED_RW;
+    }
+    return PKT_UNHANDLED;
 }
