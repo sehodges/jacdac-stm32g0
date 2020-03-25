@@ -3,6 +3,7 @@
 const host_service_t *services[] = {
     &host_ctrl,
     &host_accelerometer,
+    &host_light,
 };
 
 #define NUM_SERVICES (sizeof(services) / sizeof(services[0]))
@@ -56,9 +57,6 @@ void app_process() {
 }
 
 static void handle_packet(jd_packet_t *pkt) {
-// DMESG("handle pkt; dst=%x/%d sz=%d", (uint32_t)pkt->header.device_identifier,
-//      pkt->header.service_number, pkt->header.size);
-
 #ifdef CNT_FLOOD
     if (pkt->service_number == 0x42) {
         numPkts++;
@@ -91,6 +89,8 @@ static void handle_packet(jd_packet_t *pkt) {
 
     if (!matched_devid)
         return;
+
+    //dump_pkt(pkt, "TOP");
 
     if (pkt->service_number < NUM_SERVICES)
         services[pkt->service_number]->handle_pkt(pkt);

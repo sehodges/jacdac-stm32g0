@@ -39,6 +39,7 @@ uint64_t device_id(void);
 RAM_FUNC
 void target_wait_cycles(int n);
 uint32_t random_int(int max);
+void dump_pkt(jd_packet_t *pkt, const char *msg);
 
 // exti.c
 void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback);
