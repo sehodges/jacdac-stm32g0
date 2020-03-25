@@ -11,8 +11,8 @@ uint32_t now;
 
 void app_queue_annouce() {
     static uint8_t ledcnt;
-    if (++ledcnt >= 3) {
-        led_blink(1);
+    if (++ledcnt >= 1) {
+        led_blink(50);
         ledcnt = 0;
     }
 

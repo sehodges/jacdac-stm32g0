@@ -11,7 +11,7 @@ static void identify(int num) {
         return;
 
     id_counter--;
-    led_blink(50);
+    led_blink(50000);
 }
 
 void ctrl_init(uint8_t service_num) {}

@@ -50,11 +50,12 @@ void led_set(int state) {
     pin_set(PIN_LED, state);
 }
 
-void led_blink(int ms) {
-    led_off_time = tim_get_micros() + ms * 1000;
+void led_blink(int us) {
+    led_off_time = tim_get_micros() + us;
     led_set(1);
 }
 
+#if 0
 #define NUM_PIXELS 14
 static uint32_t px_buffer[(NUM_PIXELS * 9 + 8) / 4];
 
@@ -74,9 +75,12 @@ void rainbow() {
 
     px_tx(px_buffer, sizeof(px_buffer), rainbow);
 }
+#endif
 
 int main(void) {
     led_init();
+
+    alloc_init();
 
     tim_init();
     px_init();
@@ -90,6 +94,7 @@ int main(void) {
         if (led_off_time && tim_get_micros() > led_off_time) {
             led_off_time = 0;
             led_set(0);
+            alloc(0);
         }
         app_process();
     }
