@@ -291,8 +291,8 @@ value is zero-extended or sign-extended depending on register.
 
 Registers are identified by 12 bit indices and not memory addresses
 and are non-overlapping.
-For example, it's possible to have register `0x090` of size `4`
-and non-overlapping register `0x091` of size `12`.
+For example, it's possible to have register `0x090` of size `12`
+and non-overlapping register `0x091` of size `4`.
 
 Registers are partitioned as follows:
 
