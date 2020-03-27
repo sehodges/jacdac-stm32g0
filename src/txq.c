@@ -33,10 +33,10 @@ void txq_flush() {
         return;
     if (sendFrame[bufferPtr].size == 0)
         return;
+    sendFrame[bufferPtr].device_identifier = device_id();
     jd_compute_crc(&sendFrame[bufferPtr]);
     bufferPtr ^= 1;
     jd_packet_ready();
 
     jd_reset_frame(&sendFrame[bufferPtr]);
-    sendFrame[bufferPtr].device_identifier = device_id();
 }
