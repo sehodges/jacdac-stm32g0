@@ -73,7 +73,7 @@ void acc_init(uint8_t service_num) {
 static void emit_event(int ev) {
     if (ev & ~0xff)
         jd_panic();
-    txq_push(sensor.service_number, JD_CMD_EVENT, ev, NULL, 0);
+    txq_push(sensor.service_number, JD_CMD_EVENT, &ev, 4);
 }
 
 static void emit_g_event(int ev) {
@@ -225,14 +225,19 @@ void acc_process() {
     process_events();
 
     if (sensor_should_stream(&sensor))
-        txq_push(sensor.service_number, JD_CMD_GET_STATE, 0, &sample, sizeof(sample));
+        txq_push(sensor.service_number, JD_CMD_GET_REG | JD_REG_SENSOR_VALUE, &sample,
+                 sizeof(sample));
 }
 
 void acc_handle_packet(jd_packet_t *pkt) {
-    //dump_pkt(pkt, "ACC");
-    //DMESG("Acc st=%x %dus %d %d", sensor.status, sensor.sample_interval, sensor.next_sample, now);
+    // dump_pkt(pkt, "ACC");
+    // DMESG("Acc st=%x %dus %d %d", sensor.status, sensor.streaming_interval, sensor.next_sample,
+    // now);
 
     sensor_handle_packet(&sensor, pkt);
+
+    if (pkt->service_command == (JD_CMD_GET_REG | JD_REG_SENSOR_VALUE))
+        txq_push(pkt->service_number, pkt->service_command, &sample, sizeof(sample));
 }
 
 const host_service_t host_accelerometer = {

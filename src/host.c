@@ -13,75 +13,118 @@ bool should_sample(uint32_t *sample, uint32_t period) {
     return true;
 }
 
+REG_DEFINITION(                         //
+    sensor_regs,                        //
+    REG_BIT(JD_REG_IS_STREAMING),       //
+    REG_U8(JD_REG_PADDING),             // service_number not accessible
+    REG_U32(JD_REG_STREAMING_INTERVAL), //
+    REG_U32(JD_REG_PADDING),            // next_sample not accesible
+);
+
 int sensor_handle_packet(sensor_state_t *state, jd_packet_t *pkt) {
-    int val = pkt->service_size >= 4 ? *(int *)pkt->data : 0;
-    switch (pkt->service_command) {
-    case JD_CMD_SET_STREAMING:
-        if (pkt->service_arg == 1) {
-            state->status |= SENSOR_STREAMING;
-            if (val) {
-                if (val < 20)
-                    val = 20; // min 20ms
-                if (val > 100000)
-                    val = 100000; // max 100s
-                state->sample_interval = val * 1000;
-            }
-            if (!state->sample_interval)
-                state->sample_interval = 100000; // default to 100ms
+    int r = handle_reg(state, pkt, sensor_regs);
+    switch (r) {
+    case JD_REG_IS_STREAMING:
+        if (state->is_streaming) {
+            if (state->streaming_interval == 0)
+                state->streaming_interval = 100;
             state->next_sample = now;
-        } else if (pkt->service_arg == 0) {
-            state->status &= ~SENSOR_STREAMING;
         }
-        return PKT_HANDLED_RW;
-    case JD_CMD_GET_STREAMING:
-        val = state->sample_interval / 1000;
-        txq_push(pkt->service_number, JD_CMD_GET_STREAMING,
-                 state->status & SENSOR_STREAMING ? 1 : 0, &val, 4);
-        return PKT_HANDLED_RO;
-    default:
-        return PKT_UNHANDLED;
+        break;
+    case JD_REG_STREAMING_INTERVAL:
+        if (state->streaming_interval < 20)
+            state->streaming_interval = 20;
+        if (state->streaming_interval > 100000)
+            state->streaming_interval = 100000;
+        break;
     }
+    return r;
 }
 
 int sensor_should_stream(sensor_state_t *state) {
-    if (!(state->status & SENSOR_STREAMING))
+    if (!state->is_streaming)
         return false;
-    return should_sample(&state->next_sample, state->sample_interval);
+    return should_sample(&state->next_sample, state->streaming_interval * 1000);
 }
 
-int actuator_handle_packet(actuator_state_t *state, jd_packet_t *pkt) {
-    int r = handle_get_set(JD_CMD_GET_STATE, state->data, state->size, pkt);
-    if (r)
-        return r;
+#define REG_IS_SIGNED(r) ((r) <= 4 && !((r)&1))
+static const uint8_t regSize[] = {1, 1, 2, 2, 4, 4, 4, 8, 12, 16, 20, 1, 0, 0, 0, 0};
 
-    switch (pkt->service_command) {
-    case JD_CMD_SET_ENABLED:
-        if (pkt->service_arg == 0)
-            state->status &= ~ACTUATOR_ENABLED;
-        else if (pkt->service_arg == 1)
-            state->status |= ACTUATOR_ENABLED;
-        return PKT_HANDLED_RW;
-    case JD_CMD_GET_ENABLED:
-        txq_push(pkt->service_number, JD_CMD_GET_ENABLED, actuator_enabled(state), NULL, 0);
-        return PKT_HANDLED_RO;
-    case JD_CMD_SET_INTENSITY:
-        state->intensity = pkt->service_arg;
-        return PKT_HANDLED_RW;
-    default:
-        return PKT_UNHANDLED;
-    }
-}
+int handle_reg(void *state, jd_packet_t *pkt, const uint16_t sdesc[]) {
+    bool is_get = (pkt->service_command >> 12) == (JD_CMD_GET_REG >> 12);
+    bool is_set = (pkt->service_command >> 12) == (JD_CMD_SET_REG >> 12);
+    if (!is_get && !is_set)
+        return 0;
 
-int handle_get_set(uint8_t get_cmd, void *state, int size, jd_packet_t *pkt) {
-    if (pkt->service_command == get_cmd) {
-        txq_push(pkt->service_number, get_cmd, 0, state, size);
-        return PKT_HANDLED_RO;
-    } else if (pkt->service_command == get_cmd + 1) {
-        int sz = pkt->service_size;
-        if (sz > size)
-            sz = size;
-        memcpy(state, pkt->data, sz);
-        return PKT_HANDLED_RW;
+    if (is_set && pkt->service_size == 0)
+        return 0;
+
+    int reg = pkt->service_command & 0xfff;
+
+    if (reg >= 0xf00) // these are reserved
+        return 0;
+
+    if (is_set && (reg & 0xf) == 0x100)
+        return 0; // these are read-only
+
+    uint32_t offset = 0;
+    uint8_t bitoffset = 0;
+
+    for (int i = 0; sdesc[i] != JD_REG_END; ++i) {
+        int tp = sdesc[i] >> 4;
+        int regsz = regSize[tp];
+
+        if (!regsz)
+            jd_panic();
+
+        if (tp != _REG_BIT) {
+            if (bitoffset) {
+                bitoffset = 0;
+                offset++;
+            }
+            int align = regsz > 4 ? regsz : 4;
+            offset = (offset + align - 1) & ~align;
+        }
+
+        if ((sdesc[i] & 0xfff) == reg) {
+            uint8_t *sptr = (uint8_t *)state + offset;
+            if (is_get) {
+                if (tp == _REG_BIT) {
+                    uint8_t v = *sptr & (1 << bitoffset) ? 1 : 0;
+                    txq_push(pkt->service_number, pkt->service_command, &v, 1);
+                } else {
+                    txq_push(pkt->service_number, pkt->service_command, sptr, regSize[tp]);
+                }
+                return -reg;
+            } else {
+                if (tp == _REG_BIT) {
+                    if (pkt->data[0])
+                        *sptr |= 1 << bitoffset;
+                    else
+                        *sptr &= ~(1 << bitoffset);
+                } else if (regsz <= pkt->service_size) {
+                    memcpy(sptr, pkt->data, regsz);
+                } else {
+                    memcpy(sptr, pkt->data, pkt->service_size);
+                    int fill = !REG_IS_SIGNED(tp)
+                                   ? 0
+                                   : (pkt->data[pkt->service_size - 1] & 0x80) ? 0xff : 0;
+                    memset(sptr + pkt->service_size, fill, regsz - pkt->service_size);
+                }
+                return reg;
+            }
+        }
+
+        if (tp == _REG_BIT) {
+            bitoffset++;
+            if (bitoffset == 8) {
+                offset++;
+                bitoffset = 0;
+            }
+        } else {
+            offset += regsz;
+        }
     }
-    return PKT_UNHANDLED;
+
+    return 0;
 }

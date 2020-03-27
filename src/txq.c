@@ -7,10 +7,9 @@ int txq_is_idle() {
     return !isSending && sendFrame[bufferPtr].size == 0;
 }
 
-void *txq_push(unsigned service_num, unsigned service_cmd, unsigned service_arg, const void *data,
+void *txq_push(unsigned service_num, unsigned service_cmd, const void *data,
                unsigned service_size) {
-    void *trg = jd_push_in_frame(&sendFrame[bufferPtr], service_num, service_cmd, service_arg,
-                                 service_size);
+    void *trg = jd_push_in_frame(&sendFrame[bufferPtr], service_num, service_cmd, service_size);
     if (!trg) {
         DMESG("send overflow!");
         return NULL;

@@ -1,35 +1,58 @@
 #include "jdsimple.h"
 
+#define LIGHT_TYPE_WS2812B_GRB 0
+#define LIGHT_TYPE_SK9822 1
+
 #define DEFAULT_INTENSITY 15
 #define DEFAULT_NUMPIXELS 14
 #define DEFAULT_MAXPOWER 200
 
 #define FRAME_TIME 50000
 
+#define LOG DMESG
+
+#define LIGHT_REG_LIGHTTYPE 0x80
+#define LIGHT_REG_NUMPIXELS 0x81
+#define LIGHT_REG_DURATION 0x82
+#define LIGHT_REG_COLOR 0x83
+
+#define LIGHT_CMD_START_ANIMATION 0x80
+
 struct light_state {
-    actuator_state_t hd;
-    uint8_t cmd;
-    uint8_t padding;
+    uint8_t intensity;
+    uint8_t lighttype;
+    uint16_t numpixels;
+    uint32_t maxpower;
     uint16_t duration;
     uint32_t color;
 };
 
-struct light_config {
-    uint16_t numpixels;
-    uint16_t maxpower;
-};
+REG_DEFINITION(                   //
+    light_regs,                   //
+    REG_U8(JD_REG_INTENSITY),     //
+    REG_U8(LIGHT_REG_LIGHTTYPE),  //
+    REG_U16(LIGHT_REG_NUMPIXELS), //
+    REG_U32(JD_REG_MAX_POWER),    //
+    REG_U16(LIGHT_REG_DURATION),  //
+    REG_U32(LIGHT_REG_COLOR),     //
+)
 
-static struct light_config config;
-static struct light_state state;
+struct light_state state;
 static uint32_t *pxbuffer;
 static uint16_t pxbuffer_allocated;
 static uint32_t nextFrame;
-static uint8_t in_tx;
+static uint8_t in_tx, inited, service_number;
+
+static uint32_t anim_step, anim_value;
+static uint8_t anim_flag;
+static cb_t anim_fn;
+static uint32_t anim_end;
 
 void light_init(uint8_t service_num) {
-    state.hd.service_number = service_num;
-    state.hd.size = sizeof(state) - sizeof(state.hd);
-    state.hd.intensity = DEFAULT_INTENSITY;
+    service_number = service_num;
+    state.intensity = DEFAULT_INTENSITY;
+    state.numpixels = DEFAULT_NUMPIXELS;
+    state.maxpower = DEFAULT_MAXPOWER;
 }
 
 static inline uint32_t rgb(uint8_t r, uint8_t g, uint8_t b) {
@@ -110,7 +133,7 @@ static int isin(uint8_t theta) {
 }
 
 static bool is_enabled() {
-    return actuator_enabled(&state.hd) && config.numpixels > 0 && state.hd.intensity > 0;
+    return state.numpixels > 0 && state.intensity > 0;
 }
 
 static void show();
@@ -124,7 +147,7 @@ static void tx_done() {
 }
 
 static void set(uint32_t index, uint32_t color) {
-    px_set(pxbuffer, index, state.hd.intensity, color);
+    px_set(pxbuffer, index, state.intensity, color);
 }
 
 static void show() {
@@ -133,26 +156,22 @@ static void show() {
         in_tx = 2;
     } else {
         in_tx = 1;
-        px_tx(pxbuffer, PX_WORDS(config.numpixels) << 2, tx_done);
+        px_tx(pxbuffer, PX_WORDS(state.numpixels) << 2, tx_done);
     }
     target_enable_irq();
 }
 
 static void set_all(uint32_t color) {
-    for (int i = 0; i < config.numpixels; ++i)
+    for (int i = 0; i < state.numpixels; ++i)
         set(i, color);
 }
 
 static void anim_set_all() {
+    anim_fn = NULL;
     set_all(state.color);
     show();
 }
 
-static uint32_t anim_step, anim_value;
-static uint8_t anim_flag;
-
-static cb_t anim_fn;
-static uint32_t anim_end;
 static void anim_start(cb_t fn, uint32_t duration) {
     anim_fn = fn;
     if (duration == 0)
@@ -180,8 +199,8 @@ static void anim_frame() {
 // ---------------------------------------------------------------------------------------
 
 static void rainbow_step() {
-    for (int i = 0; i < config.numpixels; ++i)
-        set(i, hsv(((i * 256) / (config.numpixels - 1) + anim_value) & 0xff, 0xff, 0xff));
+    for (int i = 0; i < state.numpixels; ++i)
+        set(i, hsv(((i * 256) / (state.numpixels - 1) + anim_value) & 0xff, 0xff, 0xff));
     anim_value += anim_step;
     if (anim_value >= 0xff) {
         anim_value = 0;
@@ -190,7 +209,7 @@ static void rainbow_step() {
 }
 static void anim_rainbow() {
     anim_value = 0;
-    anim_step = 128 / config.numpixels + 1;
+    anim_step = 128 / state.numpixels + 1;
     anim_start(rainbow_step, state.duration);
 }
 
@@ -199,15 +218,15 @@ static void anim_rainbow() {
 // ---------------------------------------------------------------------------------------
 
 static void running_lights_step() {
-    if (anim_value >= config.numpixels * 2) {
+    if (anim_value >= state.numpixels * 2) {
         anim_value = 0;
         anim_finished();
         return;
     }
 
     anim_value++;
-    for (int i = 0; i < config.numpixels; ++i) {
-        int level = (state.hd.intensity * ((isin(i + anim_value) * 127) + 128)) >> 8;
+    for (int i = 0; i < state.numpixels; ++i) {
+        int level = (state.intensity * ((isin(i + anim_value) * 127) + 128)) >> 8;
         px_set(pxbuffer, i, level, state.color);
     }
 }
@@ -229,7 +248,7 @@ static void sparkle_step() {
     anim_value++;
 
     if (anim_step < 0) {
-        anim_step = random_int(config.numpixels - 1);
+        anim_step = random_int(state.numpixels - 1);
         set(anim_step, state.color);
     } else {
         set(anim_step, 0);
@@ -255,7 +274,7 @@ static void anim_sparkle() {
 // ---------------------------------------------------------------------------------------
 
 static void color_wipe_step() {
-    if (anim_value < config.numpixels) {
+    if (anim_value < state.numpixels) {
         set(anim_value, anim_flag ? state.color : 0);
         anim_value++;
     } else {
@@ -280,7 +299,7 @@ static void anim_color_wipe() {
 static void theatre_chase_step() {
     if (anim_value < 10) {
         if (anim_step < 3) {
-            for (int i = 0; i < config.numpixels; i += 3)
+            for (int i = 0; i < state.numpixels; i += 3)
                 set(i + anim_step, anim_flag ? state.color : 0);
             anim_flag = !anim_flag;
             anim_step++;
@@ -326,54 +345,52 @@ void light_process() {
     }
 }
 
-static void sync_state() {
+static void sync_config() {
     if (!is_enabled()) {
         // PIN_PWR has reverse polarity
         pin_set(PIN_PWR, 1);
         return;
     }
 
-    pin_set(PIN_PWR, 0);
-
-    if (state.cmd < sizeof(animations) / sizeof(animations[0])) {
-        cb_t f = animations[state.cmd];
-        if (f)
-            f();
-    }
-}
-
-static void sync_config() {
-    if (!(state.hd.status & ACTUATOR_INITED)) {
-        state.hd.status |= ACTUATOR_INITED;
+    if (!inited) {
+        inited = true;
         px_init();
     }
 
-    if (config.numpixels == 0)
-        config.numpixels = DEFAULT_NUMPIXELS;
-    if (config.maxpower == 0)
-        config.maxpower = DEFAULT_MAXPOWER;
-
-    if (config.numpixels > pxbuffer_allocated) {
-        pxbuffer_allocated = config.numpixels;
-        pxbuffer = alloc(PX_WORDS(pxbuffer_allocated) * 4);
+    int needed = PX_WORDS(state.numpixels);
+    if (needed > pxbuffer_allocated) {
+        pxbuffer_allocated = needed;
+        pxbuffer = alloc(needed * 4);
     }
 
-    sync_state();
+    pin_set(PIN_PWR, 0);
+}
+
+static void start_animation(jd_packet_t *pkt) {
+    if (pkt->service_size == 0)
+        return;
+    int anim = pkt->data[0];
+    if (anim < sizeof(animations) / sizeof(animations[0])) {
+        cb_t f = animations[anim];
+        if (f) {
+            anim_step = 0;
+            anim_flag = 0;
+            anim_value = 0;
+            LOG("start anim %d", anim);
+            f();
+        }
+    }
 }
 
 void light_handle_packet(jd_packet_t *pkt) {
-    int r;
-    r = handle_get_set(JD_CMD_GET_CONFIG, &config, sizeof(config), pkt);
-    if (r == PKT_HANDLED_RW)
+    switch (pkt->service_command) {
+    case LIGHT_CMD_START_ANIMATION:
         sync_config();
-
-    r = actuator_handle_packet(&state.hd, pkt);
-    if (r == PKT_HANDLED_RW) {
-        if (!(state.hd.status & ACTUATOR_INITED)) {
-            sync_config();
-        } else {
-            sync_state();
-        }
+        start_animation(pkt);
+        break;
+    default:
+        handle_reg(&state, pkt, light_regs);
+        break;
     }
 }
 

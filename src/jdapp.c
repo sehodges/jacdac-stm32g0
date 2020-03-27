@@ -20,7 +20,7 @@ void app_queue_annouce() {
     alloc_stack_check();
 
     uint32_t *dst =
-        txq_push(JD_SERVICE_NUMBER_CTRL, JD_CMD_ADVERTISEMENT_DATA, 0, NULL, NUM_SERVICES * 4);
+        txq_push(JD_SERVICE_NUMBER_CTRL, JD_CMD_ADVERTISEMENT_DATA, NULL, NUM_SERVICES * 4);
     if (!dst)
         return;
     for (int i = 0; i < NUM_SERVICES; ++i)
@@ -100,7 +100,7 @@ int app_handle_frame(jd_frame_t *frame) {
     now = tim_get_micros();
 
     if (frame->flags & JD_FRAME_FLAG_ACK_REQUESTED)
-        txq_push(JD_SERVICE_NUMBER_CRC_ACK, frame->crc & 0xff, frame->crc >> 8, NULL, 0);
+        txq_push(JD_SERVICE_NUMBER_CRC_ACK, frame->crc, NULL, 0);
 
     for (;;) {
         handle_packet((jd_packet_t *)frame);

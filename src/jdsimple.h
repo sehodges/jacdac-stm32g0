@@ -56,7 +56,7 @@ void dspi_tx(const void *data, uint32_t numbytes, cb_t doneHandler);
 void px_init(void);
 void px_tx(const void *data, uint32_t numbytes, cb_t doneHandler);
 void px_set(const void *data, uint32_t index, uint8_t intensity, uint32_t color);
-#define PX_WORDS(NUM_PIXELS) (((NUM_PIXELS) * 9 + 8) / 4)
+#define PX_WORDS(NUM_PIXELS) (((NUM_PIXELS)*9 + 8) / 4)
 
 // pins.c
 void pin_set(int pin, int v);
@@ -81,8 +81,7 @@ void app_init_services(void);
 // txq.c
 void txq_flush(void);
 int txq_is_idle(void);
-void *txq_push(unsigned service_num, unsigned service_cmd, unsigned service_arg, const void *data,
-               unsigned service_size);
+void *txq_push(unsigned service_num, unsigned service_cmd, const void *data, unsigned service_size);
 
 // alloc.c
 void alloc_init(void);
@@ -99,7 +98,6 @@ static inline bool in_past(uint32_t moment) {
 static inline bool in_future(uint32_t moment) {
     return !in_past(moment);
 }
-
 
 #ifdef __cplusplus
 }

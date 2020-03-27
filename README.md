@@ -80,8 +80,7 @@ Packets have the following format:
 |------:|-----:| ------------------------------------
 |     0 |    1 | size of data, `M`
 |     1 |    1 | service number
-|     2 |    1 | service command
-|     3 |    1 | service argument
+|     2 |    2 | service command
 |     4 |  `M` | data
 
 Packets are layed out in the `data[]` field of the frame.
@@ -102,8 +101,7 @@ struct _jd_packet_t {
 
     uint8_t service_size;
     uint8_t service_number;
-    uint8_t service_command;
-    uint8_t service_arg;
+    uint16_t service_command;
 
     uint8_t data[JD_SERIAL_PAYLOAD_SIZE]; // the actual size is service_size, this is max
 } __attribute__((__packed__, aligned(4)));

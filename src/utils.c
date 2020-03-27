@@ -188,6 +188,6 @@ uint32_t random_int(int max) {
 }
 
 void dump_pkt(jd_packet_t *pkt, const char *msg) {
-    DMESG("pkt[%s]; s#=%d sz=%d %x(%x)", msg, pkt->service_number, pkt->service_size,
-          pkt->service_command, pkt->service_arg);
+    DMESG("pkt[%s]; s#=%d sz=%d %x", msg, pkt->service_number, pkt->service_size,
+          pkt->service_command);
 }
