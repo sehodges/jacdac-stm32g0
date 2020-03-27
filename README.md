@@ -18,8 +18,9 @@ The main changes with respect to [JACDAC v0](https://jacdac.org/specification/) 
 * CRC fixed to be CRC-16-CCITT
 * announce packets now contain only service classes; device name is gone and
   advertisement data can be queried from the service
-* all packets include standardized 16-bit command and 16-bit argument, plus any custom data
+* all packets include standardized 16-bit command, plus any custom data
 * a protocol-level light-weight acknowledge mechanism is introduced
+* several packets sharing device identifier can be sent in one physical frame
 
 
 Refer to [JACDAC v0 specification](https://jacdac.org/specification/) for general description of use
@@ -84,7 +85,7 @@ Packets have the following format:
 |     4 |  `M` | data
 
 Packets are layed out in the `data[]` field of the frame.
-They are padded so they start at 4 byte boundary (there is no padding if `M` is divisible by 4).
+They are padded so they start at 4 byte boundary (ie., there is no padding if `M` is divisible by 4).
 The frame header (including `device_identifier`) is **not** repeated.
 
 The packets logically share the `device_identifier` and `flags`.
@@ -210,11 +211,11 @@ This, however, relies on IDs being evenly distributed (ie., random).
 
 ### Direction of packets
 
-The JACDAC packets contain only one device identifier.
-* if highest bit of service command is set, we call it a _command packet_ and the device identifier is the destination
-* otherwise, it's a _report packet_ and the device identifier is the source
+The JACDAC frames contain only one device identifier.
+* if lowest frame flag bit is set, we call all packets in that frame _command packets_ and the device identifier is the destination
+* otherwise, the packets in frame are _report packet_ and the device identifier is the source
 
-Additionally, for command packets with service number of `0x41` (_multicast commands_),
+Additionally, is the third bit of frame flags is set (_multicast commands_),
 the low order 32 bits of device identifier contain service class.
 The command is then directed to all services with that service class.
 
@@ -232,32 +233,76 @@ For example, a device A may advertise the that it exposes the following services
 * control (0)
 * accelerometer (1)
 * magnetometer (2)
+* LED strip (3)
+* LED strip (4)
 One can then send command packets with device identifier of A and service number of 2 to reach
 the magnetometer service on A, for example to enable streaming of readings.
 The readings would then similarly arrive with device identifier of A and service
 number of 2, but as reports.
+The same service class can occur more than once, in the example above the device might have
+two connectors for LED strips.
 
 When device advertises, the control service has to always reside at service number zero.
 
+Service classes have format `0x1xxxxxxx`, except for control service which has service class of `0x00000000`.
+If you create new service, the `xxxxxxx` should be randomly generated.
+
 ### Advertisement report packets
 
-Advertisement are sent every 300-500ms (the actual time should be picked at random between every two
-advertisement packets).
+Advertisement are sent approximately every 500ms.
 
-The service command is 0, and argument is reserved for future use (send as 0).
+The service command is 0.
 The payload is an array of unsigned 32 bit integers that represent service classes.
 The position in the array is the service number.
 For services that are missing or disabled use `0xffffffff`.
 
-TODO: do we always want to leading zero for control service?
+The clients should send the `0x00000000` class for control service, but should allow
+for possibility of that word being used for something else in future.
 
 ### ACKs
 
-If the packet is received by the control layer, and is then routed correctly,
+If a frame is received by the control layer, and is then routed correctly,
 an ACK may need to be sent.
-If in a command packet, device identifier equals our device identifier,
-and service number field has the highest bit set, an ACK is to be sent.
+This only applies when frame contains command packets,
+device identifier equals our device identifier,
+and the second bit of frame flags is set.
 
-ACK packet uses our device identifier, service number of 0,
-service command of 1, and uses the CRC of the packet being acknowledged
-as the service argument.
+ACK packet uses our device identifier, service number of `0x3f`,
+and uses the CRC of the packet being acknowledged as the service command.
+The payload is zero-sized.
+
+## Commands
+
+Commands are partitioned as follows:
+
+* `0x0000-0x007f` - commands common to all services, defined in `jdprotocol.h`
+* `0x0080-0x0eff` - commands defined per-service
+* `0x0f00-0x0fff` - reserved for implementation, should not be used on wire
+* `0x1000-0x1fff` - register read commands
+* `0x2000-0x2fff` - register write commands
+* `0x3000-0xffff` - reserved for future use
+
+### Virtual registers
+
+Devices can exposed virtual registers.
+Each register is logically between 1 bit and 236 bytes in size.
+If register is written with a value shorter than register size, the
+value is zero-extended or sign-extended depending on register.
+
+Registers are identified by 12 bit indices and not memory addresses
+and are non-overlapping.
+For example, it's possible to have register `0x090` of size `4`
+and non-overlapping register `0x091` of size `12`.
+
+Registers are partitioned as follows:
+
+* `0x001-0x07f` - r/w common to all services
+* `0x080-0x0ff` - r/w defined per-service
+* `0x100-0x17f` - r/o common to all services
+* `0x180-0x1ff` - r/o defined per-service
+* `0x200-0xeff` - custom, defined per-service - best avoided
+* `0xf00-0xfff` - reserved for implementation, should not be on the wire
+
+To read register `0x023` send a command `0x1023`.
+A `0x1023` report will contain the current value.
+To write that register, send `0x2023` command.

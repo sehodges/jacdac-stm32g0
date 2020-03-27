@@ -225,7 +225,7 @@ void acc_process() {
     process_events();
 
     if (sensor_should_stream(&sensor))
-        txq_push(sensor.service_number, JD_CMD_GET_REG | JD_REG_SENSOR_VALUE, &sample,
+        txq_push(sensor.service_number, JD_CMD_GET_REG | JD_REG_READING, &sample,
                  sizeof(sample));
 }
 
@@ -236,7 +236,7 @@ void acc_handle_packet(jd_packet_t *pkt) {
 
     sensor_handle_packet(&sensor, pkt);
 
-    if (pkt->service_command == (JD_CMD_GET_REG | JD_REG_SENSOR_VALUE))
+    if (pkt->service_command == (JD_CMD_GET_REG | JD_REG_READING))
         txq_push(pkt->service_number, pkt->service_command, &sample, sizeof(sample));
 }
 
