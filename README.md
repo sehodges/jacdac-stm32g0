@@ -306,3 +306,16 @@ Registers are partitioned as follows:
 To read register `0x023` send a command `0x1023`.
 A `0x1023` report will contain the current value.
 To write that register, send `0x2023` command.
+
+### Registers vs commands
+
+Client implementations should:
+* before the client device is connected, queue up all commands
+* when the client device enumerates, send all these commands
+* when the client device re-attaches (eg., resets), all register-set commands (but not other commands) should be re-send
+* when queuing up commands, only queue one instance per each command (including one instance per register)
+
+These requirements can be used as guideline when to use a register vs a command
+in a service design.
+
+TODO: add counter in announce packet to detect reset?
