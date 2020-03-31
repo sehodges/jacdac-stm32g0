@@ -108,11 +108,6 @@ void target_wait_us(uint32_t n) {
     target_wait_cycles(n);
 }
 
-uint32_t device_id_hash() {
-    uint32_t *uid = (uint32_t *)UID_BASE;
-    return jd_hash_fnv1a(uid, 12);
-}
-
 uint64_t device_id() {
     static uint64_t cache;
     if (!cache) {
@@ -121,9 +116,11 @@ uint64_t device_id() {
         // DMESG("serial: %x %x %x", ((uint32_t *)UID_BASE)[0], ((uint32_t *)UID_BASE)[1],
         //      ((uint32_t *)UID_BASE)[2]);
 
+        // we hash everything - the entropy in the first word seems to be quite low
+        uint8_t *uid = (uint8_t *)UID_BASE;
         // clear "universal" bit
-        uint32_t w0 = ((uint32_t *)UID_BASE)[0] & ~0x02000000;
-        uint32_t w1 = device_id_hash();
+        uint32_t w0 = jd_hash_fnv1a(uid, 12) & ~0x02000000;
+        uint32_t w1 = jd_hash_fnv1a(uid + 4, 8);
         cache = (uint64_t)w0 << 32 | w1;
     }
     return cache;
