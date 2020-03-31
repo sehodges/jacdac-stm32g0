@@ -205,9 +205,11 @@ Make sure to machine-generate the number, do not just bang on the keyboard.
 You can use the line at the bottom of [CF2 patcher](https://microsoft.github.io/uf2/patcher/)
 to generate random numbers.
 
-While it's theoretically possible for a device ID collision to occur in a small network of say 100 devices,
-it's very unlikely unless we get many trillions of such networks.
-This, however, relies on IDs being evenly distributed (ie., random).
+It's theoretically possible for a device ID collision to occur in a small network of say 200 devices.
+With evenly distributed (ie., random) device IDs and 1 trillion such networks 
+the probability of collision in any of them is 0.1%.
+OTOH, were we to use 32 bit IDs, with 2000 networks the collision probability in any of them
+is already 1%, and with 200k networks it's more 60%.
 
 ### Direction of packets
 
