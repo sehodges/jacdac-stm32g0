@@ -79,6 +79,7 @@ void rainbow() {
 
 int main(void) {
     led_init();
+    led_set(1);
 
     alloc_init();
 
@@ -89,6 +90,8 @@ int main(void) {
     jd_init();
 
     app_init_services();
+
+    led_off_time = tim_get_micros() + 200000;
 
     while (1) {
         if (led_off_time && tim_get_micros() > led_off_time) {
