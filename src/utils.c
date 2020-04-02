@@ -108,6 +108,22 @@ void target_wait_us(uint32_t n) {
     target_wait_cycles(n);
 }
 
+static uint32_t murmur_hash2(uint32_t *d, int words) {
+    const uint32_t m = 0x5bd1e995;
+    uint32_t h = 0;
+
+    while (words--) {
+        uint32_t k = *d++;
+        k *= m;
+        k ^= k >> 24;
+        k *= m;
+        h *= m;
+        h ^= k;
+    }
+
+    return h;
+}
+
 uint64_t device_id() {
     static uint64_t cache;
     if (!cache) {
@@ -117,10 +133,11 @@ uint64_t device_id() {
         //      ((uint32_t *)UID_BASE)[2]);
 
         // we hash everything - the entropy in the first word seems to be quite low
+        // we also use two independant hashes
         uint8_t *uid = (uint8_t *)UID_BASE;
-        // clear "universal" bit
-        uint32_t w0 = jd_hash_fnv1a(uid, 12) & ~0x02000000;
-        uint32_t w1 = jd_hash_fnv1a(uid + 4, 8);
+        uint32_t w1 = jd_hash_fnv1a(uid, 12);
+        uint32_t w0 = murmur_hash2((uint32_t *)uid, 3);
+        w0 &= ~0x02000000; // clear "universal" bit
         cache = (uint64_t)w0 << 32 | w1;
     }
     return cache;
