@@ -90,7 +90,7 @@ static void handle_packet(jd_packet_t *pkt) {
     if (!matched_devid)
         return;
 
-    //dump_pkt(pkt, "TOP");
+    // dump_pkt(pkt, "TOP");
 
     if (pkt->service_number < NUM_SERVICES)
         services[pkt->service_number]->handle_pkt(pkt);
@@ -99,7 +99,8 @@ static void handle_packet(jd_packet_t *pkt) {
 int app_handle_frame(jd_frame_t *frame) {
     now = tim_get_micros();
 
-    if (frame->flags & JD_FRAME_FLAG_ACK_REQUESTED)
+    if (frame->flags & JD_FRAME_FLAG_ACK_REQUESTED && frame->flags & JD_FRAME_FLAG_COMMAND &&
+        frame->device_identifier == device_id())
         txq_push(JD_SERVICE_NUMBER_CRC_ACK, frame->crc, NULL, 0);
 
     for (;;) {
