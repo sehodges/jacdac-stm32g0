@@ -96,7 +96,7 @@ static inline bool in_past(uint32_t moment) {
     return ((now - moment) >> 29) == 0;
 }
 static inline bool in_future(uint32_t moment) {
-    return !in_past(moment);
+    return ((moment - now) >> 29) == 0;
 }
 
 #ifdef __cplusplus
