@@ -220,9 +220,14 @@ static void check_idle() {
         jd_panic();
 }
 
-void uart_wait_high() {
-    while (!LL_GPIO_IsInputPinSet(PIN_PORT, PIN_PIN))
+int uart_wait_high() {
+    int timeout = 5000;
+    while (timeout-- > 0 && !LL_GPIO_IsInputPinSet(PIN_PORT, PIN_PIN))
         ;
+    if (timeout <= 0)
+        return -1;
+    else
+        return 0;
 }
 
 int uart_start_tx(const void *data, uint32_t numbytes) {
@@ -238,7 +243,6 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
         // we don't re-enable EXTI - the RX complete will do it
         return -1;
     }
-
 
     LL_GPIO_ResetOutputPin(PIN_PORT, PIN_PIN);
     gpio_probe_and_set(PIN_PORT, PIN_PIN, PIN_MODER | PIN_PORT->MODER);
