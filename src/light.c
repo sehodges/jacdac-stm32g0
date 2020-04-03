@@ -337,12 +337,14 @@ static cb_t animations[] = {
 };
 
 void light_process() {
+    // we always check timer to avoid problem with timer overflows
+    bool should = should_sample(&nextFrame, FRAME_TIME);
+
     if (!is_enabled())
         return;
 
-    if (should_sample(&nextFrame, FRAME_TIME)) {
+    if (should)
         anim_frame();
-    }
 }
 
 static void sync_config() {

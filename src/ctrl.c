@@ -3,8 +3,10 @@
 static void identify(int num) {
     static uint8_t id_counter;
     static uint32_t nextblink;
-    if (num)
+    if (num) {
         id_counter = num;
+        nextblink = now;
+    }
     if (!id_counter)
         return;
     if (!should_sample(&nextblink, 150000))

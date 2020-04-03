@@ -6,7 +6,7 @@ bool should_sample(uint32_t *sample, uint32_t period) {
 
     *sample += period;
 
-    if (in_past(*sample))
+    if (!in_future(*sample))
         // we lost some samples
         *sample = now + period;
 
