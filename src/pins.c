@@ -33,6 +33,17 @@ void pin_setup_input(int pin, int pull) {
     LL_GPIO_Init(PORT(pin), &GPIO_InitStruct);
 }
 
+void pin_setup_analog_input(int pin) {
+    if ((uint8_t)pin == 0xff)
+        return;
+    LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+    GPIO_InitStruct.Pin = PIN(pin);
+    LL_GPIO_Init(PORT(pin), &GPIO_InitStruct);
+}
+
 // TODO use this everywhere
 void pin_setup_output_af(int pin, int af) {
     if ((uint8_t)pin == 0xff)

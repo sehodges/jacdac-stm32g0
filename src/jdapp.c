@@ -2,7 +2,9 @@
 
 const host_service_t *services[] = {
     &host_ctrl,
+#ifndef NO_ACC
     &host_accelerometer,
+#endif
     &host_light,
 };
 

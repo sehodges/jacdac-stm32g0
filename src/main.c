@@ -1,22 +1,27 @@
 #include "jdsimple.h"
 
-void led_init() {
-    pin_setup_output(PIN_LOG0);
-    pin_setup_output(PIN_LOG1);
-    pin_setup_output(PIN_LOG2);
-    pin_setup_output(PIN_LOG3);
-    pin_setup_output(PIN_LED);
-    pin_setup_output(PIN_LED2);
+static const uint8_t output_pins[] = {
+    PIN_LOG0, PIN_LOG1,     PIN_LOG2,    PIN_LOG3,    PIN_LED,    PIN_LED2,    PIN_PWR,
+    PIN_P0,   PIN_P1,       PIN_ASCK,    PIN_AMOSI,   PIN_SERVO,  PIN_LED_GND, PIN_GLO0,
+    PIN_GLO1, PIN_ACC_MOSI, PIN_ACC_SCK, PIN_ACC_VCC, PIN_ACC_CS,
+};
 
-    pin_setup_output(PIN_PWR);
-    pin_setup_output(PIN_P0);
-    pin_setup_output(PIN_P1);
-    pin_setup_output(PIN_ASCK);
-    pin_setup_output(PIN_AMOSI);
-    pin_setup_output(PIN_SERVO);
-    pin_setup_output(PIN_LED_GND);
+static const uint8_t ain_pins[] = {
+    PIN_GLO_SENSE0, PIN_GLO_SENSE1, PIN_ACC_MISO, PIN_UNUSED0,
+    PIN_UNUSED1,    PIN_UNUSED2,    PIN_UNUSED3,  PIN_UNUSED4,
+};
+
+void led_init() {
+    for (unsigned i = 0; i < sizeof(output_pins); ++i)
+        pin_setup_output(output_pins[i]);
+
+    for (unsigned i = 0; i < sizeof(ain_pins); ++i)
+        pin_setup_analog_input(ain_pins[i]);
 
     pin_set(PIN_PWR, 1); // PWR is reverse polarity
+
+    //__HAL_RCC_GPIOC_CLK_DISABLE();
+    //__HAL_RCC_GPIOF_CLK_DISABLE();
 }
 
 void log_pin_set(int line, int v) {

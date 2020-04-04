@@ -68,6 +68,7 @@ int pin_get(int pin);
 // pull: -1, 0, 1
 void pin_setup_input(int pin, int pull);
 void pin_setup_output_af(int pin, int af);
+void pin_setup_analog_input(int pin);
 
 // adc.c
 void adc_init_random(void);
@@ -76,6 +77,7 @@ void adc_init_random(void);
 void rtc_init(void);
 void rtc_sleep(void);
 void rtc_set_cb(cb_t cb);
+void rtc_ensure_clock_setup(void);
 
 void tim_forward(int us);
 

@@ -53,3 +53,6 @@
 #define PC_13 0x2D
 #define PC_14 0x2E
 #define PC_15 0x2F
+
+#define PF_0 0x5F
+#define PF_1 0x5F

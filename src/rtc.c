@@ -124,6 +124,7 @@ void rtc_sleep() {
     LL_PWR_SetPowerMode(LL_PWR_MODE_STANDBY);
 #else
     LL_PWR_SetPowerMode(LL_PWR_MODE_STOP_LPREGU);
+    //LL_PWR_SetPowerMode(LL_PWR_MODE_STOP_MAINREGU);
 #endif
     LL_LPM_EnableDeepSleep();
     pin_set(PIN_P1, 0);
