@@ -70,6 +70,11 @@ void pin_setup_output_af(int pin, int af);
 // adc.c
 void adc_init_random(void);
 
+// rtc.c
+void rtc_init(int usec);
+void rtc_set_cb(cb_t cb);
+
+
 // pwm.c
 uint8_t pwm_init(uint8_t pin, uint32_t period, uint32_t duty);
 void pwm_set_duty(uint8_t pwm_id, uint32_t duty);

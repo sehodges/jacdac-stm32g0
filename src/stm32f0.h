@@ -17,6 +17,7 @@
 #include "stm32f0xx_ll_tim.h"
 #include "stm32f0xx_ll_spi.h"
 #include "stm32f0xx_ll_adc.h"
+#include "stm32f0xx_ll_rtc.h"
 
 #include "stm32f0xx_hal_rcc.h"
 
