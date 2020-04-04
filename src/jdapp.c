@@ -40,8 +40,6 @@ void app_init_services() {
 }
 
 void app_process() {
-    now = tim_get_micros();
-
 #ifdef CNT_FLOOD
     if (txq_is_idle()) {
         cnt_count++;

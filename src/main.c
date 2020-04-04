@@ -89,16 +89,33 @@ int main(void) {
 
     jd_init();
 
+    rtc_init();
+
     app_init_services();
 
     led_off_time = tim_get_micros() + 200000;
 
+    // we run without sleep at the beginning to allow connecting debugger
+    uint64_t start_time = led_off_time + 3000000;
+
     while (1) {
-        if (led_off_time && tim_get_micros() > led_off_time) {
+        uint64_t now_long = tim_get_micros();
+        now = (uint32_t)now_long;
+
+        if (led_off_time && now_long > led_off_time) {
             led_off_time = 0;
             led_set(0);
         }
+
+        if (start_time && now_long > start_time) {
+            start_time = 0;
+        }
+
         app_process();
+
+        if (!led_off_time && !start_time && now > 3000000) {
+            rtc_sleep();
+        }
     }
 }
 
