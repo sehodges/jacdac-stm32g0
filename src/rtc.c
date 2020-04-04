@@ -1,6 +1,6 @@
 #include "jdsimple.h"
 
-static volatile uint32_t numAl;
+static volatile uint64_t last_alrm;
 
 static cb_t cb;
 
@@ -12,6 +12,16 @@ void RTC_IRQHandler(void) {
     if (LL_RTC_IsEnabledIT_ALRA(RTC) != 0) {
         if (LL_RTC_IsActiveFlag_ALRA(RTC) != 0) {
             LL_RTC_ClearFlag_ALRA(RTC);
+
+            uint64_t now = tim_get_micros();
+            if (last_alrm) {
+                uint32_t d = now - last_alrm;
+                // if it appears the timer was off while we were sleeping
+                if (d < RTC_ALRM_US * 8 / 10)
+                    // move it forward
+                    tim_forward(last_alrm + RTC_ALRM_US - now);
+            }
+            last_alrm = now;
 
             pin_set(PIN_P0, 1);
             pin_set(PIN_P0, 0);
@@ -80,7 +90,7 @@ static void rtc_config(uint8_t p0, uint16_t p1) {
 
 #define CALIB_CYCLES 1024
 
-void rtc_init(int usec) {
+void rtc_init() {
     rtc_config(1, CALIB_CYCLES);
     uint64_t t0 = tim_get_micros();
     target_disable_irq();
@@ -89,8 +99,14 @@ void rtc_init(int usec) {
     uint32_t d = (tim_get_micros() - t0) + 20;
     target_enable_irq();
 
-    uint32_t presc = CALIB_CYCLES * usec / d;
+    uint32_t presc = CALIB_CYCLES * RTC_ALRM_US / d;
     DMESG("rtc: c=%d p=%d", d, presc);
 
     rtc_config(1, presc);
+}
+
+void rtc_sleep() {
+    //LL_PWR_SetPowerMode(LL_PWR_MODE_STOP_LPREGU);
+    //LL_LPM_EnableDeepSleep();
+    __WFI();
 }

@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+#define RTC_ALRM_US 10000
+
 #define RAM_FUNC __attribute__((noinline, long_call, section(".data")))
 
 // main.c
@@ -71,9 +73,11 @@ void pin_setup_output_af(int pin, int af);
 void adc_init_random(void);
 
 // rtc.c
-void rtc_init(int usec);
+void rtc_init(void);
+void rtc_sleep(void);
 void rtc_set_cb(cb_t cb);
 
+void tim_forward(int us);
 
 // pwm.c
 uint8_t pwm_init(uint8_t pin, uint32_t period, uint32_t duty);
