@@ -2,7 +2,7 @@ PREFIX = arm-none-eabi-
 CC = $(PREFIX)gcc
 AS = $(PREFIX)as
 
-TARGET ?= jdm-v3
+TARGET ?= button-v0
 
 JD_CORE = jacdac-core
 
