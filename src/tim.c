@@ -20,9 +20,19 @@ uint64_t tim_get_micros() {
 
 static volatile cb_t timer_cb;
 
+void tim_forward(int us) {
+    timeoff += us;
+}
+
 void tim_set_timer(int delta, cb_t cb) {
     if (delta < 10)
         delta = 10;
+
+    if (delta >= RTC_ALRM_US) {
+        timer_cb = NULL;
+        rtc_set_cb(cb);
+        return;
+    }
 
     target_disable_irq();
     timer_cb = cb;
