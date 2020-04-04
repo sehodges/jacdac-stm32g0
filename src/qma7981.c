@@ -158,7 +158,9 @@ static void init_chip() {
 
 void acc_hw_get(int16_t sample[3]) {
     int16_t data[3];
+    pin_setup_input(PIN_ACC_MISO, -1);
     readData(REG_DX, (uint8_t *)data, 6);
+    pin_setup_analog_input(PIN_ACC_MISO);
     sample[0] = data[1] >> 2;
     sample[1] = -data[0] >> 2;
     sample[2] = -data[2] >> 2;
@@ -192,4 +194,6 @@ void acc_hw_init() {
     }
 
     init_chip();
+
+    pin_setup_analog_input(PIN_ACC_MISO);
 }
