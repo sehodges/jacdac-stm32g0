@@ -67,4 +67,8 @@ void adc_init_random(void) {
         h = (h * 0x1000193) ^ (v & 0xff);
     }
     jd_seed_random(h);
+
+    // save power
+    LL_ADC_Disable(ADC1);
+    __HAL_RCC_ADC_CLK_DISABLE();
 }
