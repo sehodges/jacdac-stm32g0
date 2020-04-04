@@ -28,11 +28,13 @@ void tim_set_timer(int delta, cb_t cb) {
     if (delta < 10)
         delta = 10;
 
-    if (delta >= RTC_ALRM_US) {
+    if (delta >= 10000) {
         timer_cb = NULL;
         rtc_set_cb(cb);
         return;
     }
+
+    rtc_set_cb(NULL);
 
     target_disable_irq();
     timer_cb = cb;

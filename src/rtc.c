@@ -13,13 +13,17 @@ void RTC_IRQHandler(void) {
         if (LL_RTC_IsActiveFlag_ALRA(RTC) != 0) {
             LL_RTC_ClearFlag_ALRA(RTC);
 
+            rtc_ensure_clock_setup();
+
             uint64_t now = tim_get_micros();
             if (last_alrm) {
                 uint32_t d = now - last_alrm;
                 // if it appears the timer was off while we were sleeping
-                if (d < RTC_ALRM_US * 8 / 10)
+                if (d < RTC_ALRM_US * 8 / 10) {
                     // move it forward
                     tim_forward(last_alrm + RTC_ALRM_US - now);
+                    now = last_alrm + RTC_ALRM_US;
+                }
             }
             last_alrm = now;
 
@@ -105,8 +109,24 @@ void rtc_init() {
     rtc_config(1, presc);
 }
 
+void setup_clock(void);
+
 void rtc_sleep() {
-    //LL_PWR_SetPowerMode(LL_PWR_MODE_STOP_LPREGU);
-    //LL_LPM_EnableDeepSleep();
+    // only go to sleep when JD asked us to run the tick()
+    if (cb == NULL || jd_is_busy())
+        return;
+
+#if 0
+    // 6uA
+    rtc_config(100, 10000);
+    LL_PWR_ClearFlag_SB();
+    LL_PWR_ClearFlag_WU();
+    LL_PWR_SetPowerMode(LL_PWR_MODE_STANDBY);
+#else
+    LL_PWR_SetPowerMode(LL_PWR_MODE_STOP_LPREGU);
+#endif
+    LL_LPM_EnableDeepSleep();
+    pin_set(PIN_P1, 0);
     __WFI();
+    pin_set(PIN_P1, 1);
 }

@@ -13,6 +13,8 @@ static void check_line(int ln) {
 }
 
 void EXTI0_1_IRQHandler() {
+    rtc_ensure_clock_setup();
+
     cb_t f = trigger_cb;
     if (f) {
         trigger_cb = NULL;
@@ -22,10 +24,12 @@ void EXTI0_1_IRQHandler() {
     check_line(1);
 }
 void EXTI2_3_IRQHandler() {
+    rtc_ensure_clock_setup();
     check_line(2);
     check_line(3);
 }
 void EXTI4_15_IRQHandler() {
+    rtc_ensure_clock_setup();
     for (int i = 4; i <= 15; ++i)
         check_line(i);
 }
@@ -67,7 +71,7 @@ void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback) {
             uint32_t line = (pos >> 2) | ((pos & 3) << 19);
             LL_EXTI_SetEXTISource(extiport, line);
 #endif
-                LL_EXTI_EnableIT_0_31(1 << pos);
+            LL_EXTI_EnableIT_0_31(1 << pos);
             LL_EXTI_EnableFallingTrig_0_31(1 << pos);
             callbacks[pos] = callback;
         }

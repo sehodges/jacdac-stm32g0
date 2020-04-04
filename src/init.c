@@ -26,7 +26,7 @@ static void enable_nrst_pin() {
 
     uint32_t nrstmode;
 
-        /* Enable Flash access anyway */
+    /* Enable Flash access anyway */
     __HAL_RCC_FLASH_CLK_ENABLE();
 
     /* Unlock flash */
@@ -61,8 +61,7 @@ static void enable_nrst_pin() {
 #endif
 }
 
-void SystemClock_Config(void) {
-
+static void setup_clock() {
 #if defined(STM32G0)
     LL_FLASH_SetLatency(LL_FLASH_LATENCY_2);
     LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSI, LL_RCC_PLLM_DIV_1, 8, LL_RCC_PLLR_DIV_2);
@@ -87,6 +86,15 @@ void SystemClock_Config(void) {
         ;
 
     LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
+}
+
+void rtc_ensure_clock_setup() {
+    if (!(RCC->CR & RCC_CR_PLLON))
+        setup_clock();
+}
+
+void SystemClock_Config(void) {
+    setup_clock();
 
     SystemCoreClock = CPU_MHZ * 1000000;
     LL_InitTick(SystemCoreClock, 1000U);
