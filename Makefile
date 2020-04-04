@@ -58,15 +58,22 @@ drop:
 	$(MAKE) TARGET=f031 all
 
 r: run
+l: flash-loop
 
-run: all prep-built-gdb
+run: all flash
+
+flash: prep-built-gdb
 ifeq ($(BMP),)
 	$(OPENOCD) -c "program $(BUILT)/binary.elf verify reset exit"
 else
 	echo "load" >> built/debug.gdb
 	echo "quit" >> built/debug.gdb
-	arm-none-eabi-gdb --command=built/debug.gdb
+	arm-none-eabi-gdb --command=built/debug.gdb < /dev/null 2>&1 | tee built/flash.log
+	grep -q "Start address" built/flash.log
 endif
+
+flash-loop: all
+	while : ; do make flash && break ; sleep 1 ; done
 
 prep-built-gdb:
 	echo "file $(BUILT)/binary.elf" > built/debug.gdb
