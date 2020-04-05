@@ -151,7 +151,19 @@ static void init_chip() {
     writeReg(REG_PM, 0x80);
     writeReg(REG_INT_CFG, 0x1C | (1 << 5)); // disable I2C
     writeReg(REG_FSR, QMAX981_RANGE_8G);
-    writeReg(REG_BW, 0xE0); // 65Hz
+
+    // ~50uA
+    // writeReg(REG_PM, 0x84); // MCK 50kHz
+    // writeReg(REG_BW, 0xE3); // sample 50kHz/975 = 51.3Hz
+
+    // ~60uA
+    writeReg(REG_PM, 0x83); // MCK 100kHz
+    writeReg(REG_BW, 0xE2); // sample 100kHz/1935 = 51.7Hz
+
+//    writeReg(REG_PM, 0x40); // sleep
+
+    // ~150uA - 500kHz
+    // writeReg(REG_BW, 0xE0); // 65Hz
     // 0xE1 130Hz
     // 0xE2 260Hz
 }

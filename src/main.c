@@ -77,6 +77,7 @@ int main(void) {
     jd_init();
 
 #if 0
+    target_wait_us(5000000);
     led_set(0);
     LL_PWR_SetPowerMode(LL_PWR_MODE_STOP_LPREGU);
     LL_LPM_EnableDeepSleep();
