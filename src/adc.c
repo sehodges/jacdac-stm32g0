@@ -56,6 +56,8 @@ void adc_init_random(void) {
         ;
     target_wait_us(5); // ADC_DELAY_CALIB_ENABLE_CPU_CYCLES
 
+    // LL_ADC_SetLowPowerMode(ADC1, LL_ADC_LP_AUTOPOWEROFF);
+
     LL_ADC_Enable(ADC1);
 
     while (LL_ADC_IsActiveFlag_ADRDY(ADC1) == 0)
@@ -68,7 +70,15 @@ void adc_init_random(void) {
     }
     jd_seed_random(h);
 
-    // save power
+    // ADC enabled is like 200uA in STOP
     LL_ADC_Disable(ADC1);
+    while (LL_ADC_IsDisableOngoing(ADC1))
+        ;
+
+    // this brings STOP draw to 4.4uA from 46uA
+    LL_ADC_REG_SetSequencerChannels(ADC1, 0);
+    LL_ADC_SetCommonPathInternalCh(__LL_ADC_COMMON_INSTANCE(ADC1), LL_ADC_PATH_INTERNAL_NONE);
+    target_wait_us(LL_ADC_DELAY_TEMPSENSOR_STAB_US);
+
     __HAL_RCC_ADC_CLK_DISABLE();
 }
