@@ -78,6 +78,7 @@ void rtc_init(void);
 void rtc_sleep(void);
 void rtc_set_cb(cb_t cb);
 void rtc_ensure_clock_setup(void);
+void rtc_set_led_duty(int val); // 0-1000
 
 void tim_forward(int us);
 

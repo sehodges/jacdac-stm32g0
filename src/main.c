@@ -17,7 +17,7 @@ void led_init() {
     // - the other ones seem to still draw power in stop mode)
     for (unsigned i = 0; i < 16; ++i)
         pin_setup_analog_input(i + 0x50);
-   
+
     // The effects of the pins shutdown above is quite dramatic - without the MCU can draw ~100uA
     // (but with wide random variation) in STOP; with shutdown we get a stable 4.3uA
 
@@ -91,7 +91,10 @@ int main(void) {
     led_off_time = tim_get_micros() + 200000;
 
     // we run without sleep at the beginning to allow connecting debugger
-    uint64_t start_time = led_off_time + 3000000;
+    // uint64_t start_time = led_off_time + 3000000;
+    uint64_t start_time = led_off_time;
+
+    rtc_set_led_duty(200);
 
     while (1) {
         uint64_t now_long = tim_get_micros();
@@ -108,7 +111,7 @@ int main(void) {
 
         app_process();
 
-        if (!led_off_time && !start_time && now > 3000000) {
+        if (!led_off_time && !start_time) {
             rtc_sleep();
         }
     }
