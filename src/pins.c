@@ -38,8 +38,7 @@ void pin_setup_analog_input(int pin) {
         return;
     LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
     GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
     GPIO_InitStruct.Pin = PIN(pin);
     LL_GPIO_Init(PORT(pin), &GPIO_InitStruct);
 }

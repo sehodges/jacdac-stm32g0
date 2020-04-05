@@ -26,13 +26,6 @@
 //#define PIN_ACC_CS -1
 #define ACC_PORT GPIOB
 
-#define PIN_UNUSED0 PF_0
-#define PIN_UNUSED1 PF_1
-#define PIN_UNUSED2 PA_10
-#define PIN_UNUSED3 PA_12
-#define PIN_UNUSED4 PB_3
-
-
 #define UART_PIN PA_9
 #define UART_PIN_AF LL_GPIO_AF_1
 #define USART_IDX 1

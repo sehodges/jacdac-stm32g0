@@ -6,22 +6,26 @@ static const uint8_t output_pins[] = {
     PIN_GLO1, PIN_ACC_MOSI, PIN_ACC_SCK, PIN_ACC_VCC, PIN_ACC_CS,
 };
 
-static const uint8_t ain_pins[] = {
-    PIN_GLO_SENSE0, PIN_GLO_SENSE1, PIN_ACC_MISO, PIN_UNUSED0,
-    PIN_UNUSED1,    PIN_UNUSED2,    PIN_UNUSED3,  PIN_UNUSED4,
-};
-
 void led_init() {
+    // To save power, especially in STOP mode,
+    // configure all pins in GPIOA,B,C as analog inputs (except for SWD)
+    for (unsigned i = 0; i < 16 * 3; ++i)
+        if (i != 13 && i != 14) // 13/14 are SWD pins
+            pin_setup_analog_input(i);
+
+    // also do all GPIOF (note that it's not enough to just clear PF0 and PF1
+    // - the other ones seem to still draw power in stop mode)
+    for (unsigned i = 0; i < 16; ++i)
+        pin_setup_analog_input(i + 0x50);
+   
+    // The effects of the pins shutdown above is quite dramatic - without the MCU can draw ~100uA
+    // (but with wide random variation) in STOP; with shutdown we get a stable 4.3uA
+
+    // setup all our output pins
     for (unsigned i = 0; i < sizeof(output_pins); ++i)
         pin_setup_output(output_pins[i]);
 
-    for (unsigned i = 0; i < sizeof(ain_pins); ++i)
-        pin_setup_analog_input(ain_pins[i]);
-
     pin_set(PIN_PWR, 1); // PWR is reverse polarity
-
-    //__HAL_RCC_GPIOC_CLK_DISABLE();
-    //__HAL_RCC_GPIOF_CLK_DISABLE();
 }
 
 void log_pin_set(int line, int v) {
@@ -59,29 +63,6 @@ void led_blink(int us) {
     led_off_time = tim_get_micros() + us;
     led_set(1);
 }
-
-#if 0
-#define NUM_PIXELS 14
-static uint32_t px_buffer[(NUM_PIXELS * 9 + 8) / 4];
-
-void rainbow() {
-    static int cnt = 0;
-    static uint8_t delay;
-
-    pin_set(PIN_PWR, 0); // PWR is reverse polarity
-    if (delay++ > 70) {
-        cnt++;
-        delay = 0;
-    }
-    if (cnt > NUM_PIXELS + 5)
-        cnt = 0;
-    for (int i = 0; i < NUM_PIXELS; ++i)
-        px_set(px_buffer, i, i < cnt ? 0x0f0000 : 0x000f00);
-
-    px_tx(px_buffer, sizeof(px_buffer), rainbow);
-}
-#endif
-
 int main(void) {
     led_init();
     led_set(1);
@@ -90,9 +71,17 @@ int main(void) {
 
     tim_init();
     px_init();
+
     adc_init_random(); // 300b
 
     jd_init();
+
+#if 0
+    led_set(0);
+    LL_PWR_SetPowerMode(LL_PWR_MODE_STOP_LPREGU);
+    LL_LPM_EnableDeepSleep();
+    __WFI();
+#endif
 
     rtc_init();
 
