@@ -45,9 +45,7 @@ void tim_set_timer(int delta, cb_t cb) {
 }
 
 void tim_init() {
-    uint32_t tim_prescaler = __LL_TIM_CALC_PSC(SystemCoreClock, 1000000);
-    // uint32_t TimOutClock = SystemCoreClock / 1;
-    // uint32_t tim_period = __LL_TIM_CALC_ARR(TimOutClock, tim_prescaler, 10000);
+    uint32_t tim_prescaler = __LL_TIM_CALC_PSC(CPU_MHZ * 1000000, 1000000);
 
     LL_TIM_InitTypeDef TIM_InitStruct = {0};
 
