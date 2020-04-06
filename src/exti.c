@@ -5,7 +5,6 @@ static cb_t trigger_cb;
 
 static void check_line(int ln) {
     uint32_t pin = 1 << ln;
-
     if (LL_EXTI_IsActiveFallingFlag_0_31(pin) != RESET) {
         LL_EXTI_ClearFallingFlag_0_31(pin);
         callbacks[ln]();
@@ -23,13 +22,20 @@ void EXTI0_1_IRQHandler() {
     check_line(0);
     check_line(1);
 }
+
 void EXTI2_3_IRQHandler() {
     rtc_ensure_clock_setup();
     check_line(2);
     check_line(3);
 }
+
 void EXTI4_15_IRQHandler() {
     rtc_ensure_clock_setup();
+
+    // first check UART line, to speed up handling
+    check_line(UART_PIN & 0xf);
+
+    // check the rest of the lines (this includes UART line, but it's fine)
     for (int i = 4; i <= 15; ++i)
         check_line(i);
 }
