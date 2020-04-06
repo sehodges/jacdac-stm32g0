@@ -181,11 +181,19 @@ static void USART_UART_Init(void) {
     LL_DMA_EnableIT_TC(DMA1, LL_DMA_CHANNEL_5);
     LL_DMA_EnableIT_TE(DMA1, LL_DMA_CHANNEL_5);
 
+#ifdef LOW_POWER
+    USARTx->CR1 = LL_USART_DATAWIDTH_8B | LL_USART_PARITY_NONE | LL_USART_OVERSAMPLING_8 |
+                  LL_USART_DIRECTION_TX;
+    USARTx->BRR = CPU_MHZ * 2; // ->1MHz
+#else
     USARTx->CR1 = LL_USART_DATAWIDTH_8B | LL_USART_PARITY_NONE | LL_USART_OVERSAMPLING_16 |
                   LL_USART_DIRECTION_TX;
+    USARTx->BRR = CPU_MHZ; // ->1MHz
+#endif
+
     USARTx->CR2 = LL_USART_STOPBITS_1;
     USARTx->CR3 = LL_USART_HWCONTROL_NONE;
-    USARTx->BRR = CPU_MHZ; // ->1MHz
+
 #ifdef LL_USART_PRESCALER_DIV1
     LL_USART_SetPrescaler(USARTx, LL_USART_PRESCALER_DIV1);
 #endif
@@ -268,9 +276,17 @@ int uart_start_tx(const void *data, uint32_t numbytes) {
     LL_USART_EnableDMAReq_TX(USARTx);
     // to here, it's about 1.3us
 
+#ifndef STM32F0
+#error "need time measurements for the wait_us below"
+#endif
+
     // the USART takes a few us to start transmiting
     // this value gives 40us from the end of low pulse to start bit
+#ifdef LOW_POWER
+    target_wait_us(24);
+#else
     target_wait_us(37);
+#endif
 
     LL_DMA_EnableChannel(DMA1, LL_DMA_CHANNEL_4);
 
