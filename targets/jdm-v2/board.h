@@ -21,6 +21,9 @@
 //#define PIN_ACC_CS -1
 #define ACC_PORT GPIOB
 
+#define PIN_GLO0 -1
+#define PIN_GLO1 -1
+
 #define UART_PIN PA_9
 #define UART_PIN_AF LL_GPIO_AF_1
 #define USART_IDX 1

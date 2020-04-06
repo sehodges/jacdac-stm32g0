@@ -27,6 +27,19 @@ void app_queue_annouce() {
         return;
     for (int i = 0; i < NUM_SERVICES; ++i)
         dst[i] = services[i]->service_class;
+
+#ifdef JDM_V2
+    pin_setup_output(PIN_P0);
+    pin_setup_output(PIN_SERVO);
+    pin_set(PIN_P0, 1);
+    pin_set(PIN_SERVO, 1);
+    pin_set(PIN_SERVO, 0);
+    pin_set(PIN_PWR, 0);
+    pin_set(PIN_PWR, 1);
+    pin_set(PIN_SERVO, 1);
+    pin_set(PIN_SERVO, 0);
+    pin_set(PIN_P0, 0);
+#endif
 }
 
 #ifdef CNT_FLOOD
