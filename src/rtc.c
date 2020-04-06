@@ -13,13 +13,13 @@ static void program_alrm(uint16_t val) {
     if (val >= presc - 1)
         return;
 
-    //LL_RTC_DisableWriteProtection(RTC);
+    // LL_RTC_DisableWriteProtection(RTC);
     LL_RTC_ALMA_Disable(RTC);
     while (!LL_RTC_IsActiveFlag_ALRAW(RTC))
         ;
     LL_RTC_ALMA_SetSubSecond(RTC, val);
     LL_RTC_ALMA_Enable(RTC);
-    //LL_RTC_EnableWriteProtection(RTC);
+    // LL_RTC_EnableWriteProtection(RTC);
 }
 
 void rtc_set_led_duty(int val) {
@@ -73,8 +73,6 @@ void RTC_IRQHandler(void) {
             was_led_off_alrm = 0;
             if (f)
                 f();
-
-            
         }
     }
 
@@ -128,7 +126,7 @@ static void rtc_config(uint8_t p0, uint16_t p1) {
     while (LL_RTC_IsActiveFlag_RS(RTC) != 1)
         ;
 
-    //LL_RTC_EnableWriteProtection(RTC);
+    // LL_RTC_EnableWriteProtection(RTC);
 }
 
 #define CALIB_CYCLES 1024
@@ -151,6 +149,11 @@ void rtc_init() {
 void setup_clock(void);
 
 void rtc_sleep() {
+    if (!presc) {
+        __WFI();
+        return;
+    }
+
     // only go to sleep when JD asked us to run the tick()
     if (cb == NULL || jd_is_busy())
         return;
