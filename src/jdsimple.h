@@ -80,6 +80,10 @@ void rtc_set_cb(cb_t cb);
 void rtc_ensure_clock_setup(void);
 void rtc_set_led_duty(int val); // 0-1000
 
+#ifdef LOW_POWER
+#define rtc_ensure_clock_setup() ((void)0)
+#endif
+
 void tim_forward(int us);
 
 // pwm.c

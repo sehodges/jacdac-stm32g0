@@ -62,6 +62,9 @@ static void enable_nrst_pin() {
 }
 
 static void setup_clock() {
+    // in low-power mode we do not use PLL, so there's nothing to setup
+#ifndef LOW_POWER
+
 #if defined(STM32G0)
     LL_FLASH_SetLatency(LL_FLASH_LATENCY_2);
     LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSI, LL_RCC_PLLM_DIV_1, 8, LL_RCC_PLLR_DIV_2);
@@ -71,6 +74,8 @@ static void setup_clock() {
 #else
 #error "clock?"
 #endif
+
+    // LL_FLASH_EnablePrefetch(); // TODO
 
     LL_RCC_PLL_Enable();
 #ifdef RCC_PLLCFGR_PLLREN
@@ -86,12 +91,15 @@ static void setup_clock() {
         ;
 
     LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
+#endif
 }
 
+#ifndef LOW_POWER
 void rtc_ensure_clock_setup() {
     if (!(RCC->CR & RCC_CR_PLLON))
         setup_clock();
 }
+#endif
 
 void SystemClock_Config(void) {
     setup_clock();
