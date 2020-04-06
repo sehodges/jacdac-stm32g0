@@ -150,6 +150,7 @@ static void init_chip() {
     writeReg(REG_SR, 0x00);
     writeReg(REG_PM, 0x80);
     writeReg(REG_INT_CFG, 0x1C | (1 << 5)); // disable I2C
+    writeReg(REG_INTPIN_CONF, 0x05 | (1 << 7)); // disable pull-up on CS
     writeReg(REG_FSR, QMAX981_RANGE_8G);
 
     // ~50uA
@@ -185,7 +186,6 @@ void acc_hw_init() {
 
     pin_setup_output(PIN_ACC_VCC);
     pin_setup_output(PIN_ACC_CS);
-    // return;
 
     pin_set(PIN_ACC_CS, 1);
     pin_set(PIN_ACC_VCC, 1);
