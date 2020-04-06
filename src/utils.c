@@ -97,11 +97,9 @@ void target_wait_cycles(int n) {
 
 void target_wait_us(uint32_t n) {
 #ifdef STM32G0
-    // 64MHz, this is 3 cycles
-    n = n * 64 / 3;
+    n = n * CPU_MHZ / 3;
 #elif defined(STM32F0)
-    // 48MHz, and the loop is 4 cycles
-    n = n * 48 / 4;
+    n = n * CPU_MHZ / 4;
 #else
 #error "define clock rate"
 #endif
