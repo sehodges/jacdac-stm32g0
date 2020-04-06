@@ -41,6 +41,7 @@ void RTC_IRQHandler(void) {
             pin_set(PIN_P0, 0);
             led_set(0);
             is_led_off_alrm = 0;
+            was_led_off_alrm = 1;
             // around 20us if pin access optimized
         } else {
             rtc_ensure_clock_setup(); // 110us
@@ -69,8 +70,11 @@ void RTC_IRQHandler(void) {
             cb = NULL;
             target_enable_irq();
 
+            was_led_off_alrm = 0;
             if (f)
                 f();
+
+            
         }
     }
 
@@ -166,7 +170,7 @@ void rtc_sleep() {
     for (;;) {
         pin_set(PIN_P1, 0);
         __WFI();
-        if (RCC->CR & RCC_CR_PLLON)
+        if (!was_led_off_alrm)
             break;
     }
 }
