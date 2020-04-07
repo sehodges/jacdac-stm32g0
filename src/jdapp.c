@@ -6,6 +6,8 @@ const host_service_t *services[] = {
     &host_accelerometer,
 #endif
     &host_light,
+    &host_pwm_light,
+    &host_crank,
 };
 
 #define NUM_SERVICES (sizeof(services) / sizeof(services[0]))
