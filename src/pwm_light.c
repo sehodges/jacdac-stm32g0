@@ -104,6 +104,7 @@ void pwm_light_process() {
 void pwm_light_handle_packet(jd_packet_t *pkt) {
     switch (handle_reg(&state, pkt, pwm_light_regs)) {
     case PWM_REG_STEPS:
+        state.curr_iteration = 0;
         state.step_start_time = tim_get_micros() >> 10;
         break;
     }
