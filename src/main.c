@@ -25,7 +25,10 @@ void led_init() {
     for (unsigned i = 0; i < sizeof(output_pins); ++i)
         pin_setup_output(output_pins[i]);
 
-    pin_set(PIN_PWR, 1); // PWR is reverse polarity
+    // all power pins are reverse polarity
+    pin_set(PIN_PWR, 1);
+    pin_set(PIN_GLO0, 1);
+    pin_set(PIN_GLO1, 1);
 }
 
 void log_pin_set(int line, int v) {
@@ -84,7 +87,9 @@ int main(void) {
     __WFI();
 #endif
 
+#ifdef LOW_POWER
     rtc_init();
+#endif
 
     app_init_services();
 
