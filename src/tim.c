@@ -28,6 +28,7 @@ void tim_set_timer(int delta, cb_t cb) {
     if (delta < 10)
         delta = 10;
 
+#ifdef LOW_POWER
     if (delta >= 10000) {
         timer_cb = NULL;
         rtc_set_cb(cb);
@@ -35,6 +36,7 @@ void tim_set_timer(int delta, cb_t cb) {
     }
 
     rtc_set_cb(NULL);
+#endif
 
     target_disable_irq();
     timer_cb = cb;
