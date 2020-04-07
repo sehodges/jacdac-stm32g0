@@ -15,10 +15,8 @@
 #define _REG_U32 5
 #define _REG_BYTE4 6
 #define _REG_BYTE8 7
-#define _REG_BYTE12 8
-#define _REG_BYTE16 9
-#define _REG_BYTE20 10
-#define _REG_BIT 11
+#define _REG_BIT 8
+#define _REG_BYTES 9
 #define REG_S8(v) _REG_(_REG_S8, (v))
 #define REG_U8(v) _REG_(_REG_U8, (v))
 #define REG_S16(v) _REG_(_REG_S16, (v))
@@ -27,10 +25,8 @@
 #define REG_U32(v) _REG_(_REG_U32, (v))
 #define REG_BYTE4(v) _REG_(_REG_BYTE4, (v))
 #define REG_BYTE8(v) _REG_(_REG_BYTE8, (v))
-#define REG_BYTE12(v) _REG_(_REG_BYTE12, (v))
-#define REG_BYTE16(v) _REG_(_REG_BYTE16, (v))
-#define REG_BYTE20(v) _REG_(_REG_BYTE20, (v))
 #define REG_BIT(v) _REG_(_REG_BIT, (v))
+#define REG_BYTES(v, n) _REG_(_REG_BYTES, (v)), n
 
 #define REG_DEFINITION(name, ...) static const uint16_t name[] = {__VA_ARGS__ JD_REG_END};
 
@@ -65,3 +61,5 @@ typedef struct _host_service host_service_t;
 extern const host_service_t host_ctrl;
 extern const host_service_t host_accelerometer;
 extern const host_service_t host_light;
+extern const host_service_t host_pwm_light;
+extern const host_service_t host_crank;

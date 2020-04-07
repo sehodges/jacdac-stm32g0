@@ -48,7 +48,7 @@ int sensor_should_stream(sensor_state_t *state) {
 }
 
 #define REG_IS_SIGNED(r) ((r) <= 4 && !((r)&1))
-static const uint8_t regSize[] = {1, 1, 2, 2, 4, 4, 4, 8, 12, 16, 20, 1, 0, 0, 0, 0};
+static const uint8_t regSize[16] = {1, 1, 2, 2, 4, 4, 4, 8, 1};
 
 int handle_reg(void *state, jd_packet_t *pkt, const uint16_t sdesc[]) {
     bool is_get = (pkt->service_command >> 12) == (JD_CMD_GET_REG >> 12);
@@ -74,6 +74,9 @@ int handle_reg(void *state, jd_packet_t *pkt, const uint16_t sdesc[]) {
         int tp = sdesc[i] >> 4;
         int regsz = regSize[tp];
 
+        if (tp == _REG_BYTES)
+            regsz = sdesc[++i];
+
         if (!regsz)
             jd_panic();
 
@@ -82,7 +85,7 @@ int handle_reg(void *state, jd_packet_t *pkt, const uint16_t sdesc[]) {
                 bitoffset = 0;
                 offset++;
             }
-            int align = regsz > 4 ? regsz : 4;
+            int align = regsz < 4 ? regsz : 4;
             offset = (offset + align - 1) & ~align;
         }
 
