@@ -44,7 +44,9 @@ uint32_t random_int(int max);
 void dump_pkt(jd_packet_t *pkt, const char *msg);
 
 // exti.c
-void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback);
+#define EXTI_FALLING 0x01
+#define EXTI_RISING 0x02
+void exti_set_callback(uint8_t pin, cb_t callback, uint32_t flags);
 void exti_trigger(cb_t cb);
 #define exti_disable(pin) LL_EXTI_DisableIT_0_31(pin)
 #define exti_enable(pin) LL_EXTI_EnableIT_0_31(pin)
@@ -77,17 +79,12 @@ void adc_init_random(void);
 void rtc_init(void);
 void rtc_sleep(void);
 void rtc_set_cb(cb_t cb);
-void rtc_ensure_clock_setup(void);
 void rtc_set_led_duty(int val); // 0-1000
-
-#ifdef LOW_POWER
-#define rtc_ensure_clock_setup() ((void)0)
-#endif
 
 void tim_forward(int us);
 
 // pwm.c
-uint8_t pwm_init(uint8_t pin, uint32_t period, uint32_t duty);
+uint8_t pwm_init(uint8_t pin, uint32_t period, uint32_t duty, uint8_t prescaler);
 void pwm_set_duty(uint8_t pwm_id, uint32_t duty);
 
 // jdapp.c

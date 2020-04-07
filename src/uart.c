@@ -209,7 +209,7 @@ static void USART_UART_Init(void) {
 
     // while (!(LL_USART_IsActiveFlag_REACK(USARTx)))
     //    ;
-    exti_set_callback(PIN_PORT, PIN_PIN, jd_line_falling);
+    exti_set_callback(UART_PIN, jd_line_falling, EXTI_FALLING);
 }
 
 void uart_init() {

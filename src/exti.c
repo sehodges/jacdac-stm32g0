@@ -12,8 +12,6 @@ static void check_line(int ln) {
 }
 
 void EXTI0_1_IRQHandler() {
-    rtc_ensure_clock_setup();
-
     cb_t f = trigger_cb;
     if (f) {
         trigger_cb = NULL;
@@ -24,14 +22,11 @@ void EXTI0_1_IRQHandler() {
 }
 
 void EXTI2_3_IRQHandler() {
-    rtc_ensure_clock_setup();
     check_line(2);
     check_line(3);
 }
 
 void EXTI4_15_IRQHandler() {
-    rtc_ensure_clock_setup();
-
     // first check UART line, to speed up handling
     check_line(UART_PIN & 0xf);
 
@@ -47,43 +42,41 @@ void exti_trigger(cb_t cb) {
     // LL_EXTI_GenerateSWI_0_31(1);
 }
 
-#ifdef STM32F0
-#define LL_EXTI_CONFIG_PORTA 0
-#define LL_EXTI_CONFIG_PORTB 1
-#define LL_EXTI_CONFIG_PORTC 2
+#ifndef STM32F0
+static const uint32_t cfgs[] = {LL_EXTI_CONFIG_PORTA, LL_EXTI_CONFIG_PORTB, LL_EXTI_CONFIG_PORTC};
 #endif
 
-void exti_set_callback(GPIO_TypeDef *port, uint32_t pin, cb_t callback) {
+void exti_set_callback(uint8_t pin, cb_t callback, uint32_t flags) {
     uint32_t extiport = 0;
 
-    if (port == GPIOA)
-        extiport = LL_EXTI_CONFIG_PORTA;
-    else if (port == GPIOB)
-        extiport = LL_EXTI_CONFIG_PORTB;
-    else if (port == GPIOC)
-        extiport = LL_EXTI_CONFIG_PORTC;
-    else
+    if (pin >> 4 > 2)
         jd_panic();
-
-    int numcb = 0;
-    for (uint32_t pos = 0; pos < 16; ++pos) {
-        if (callbacks[pos])
-            numcb++;
-        if (pin & (1 << pos)) {
 #ifdef STM32F0
-            uint32_t line = (pos >> 2) | ((pos & 3) << 18);
-            LL_SYSCFG_SetEXTISource(extiport, line);
+    extiport = pin >> 4;
+#elif defined(STM32G0)
+    extiport = cfgs[pin >> 4];
 #else
-            uint32_t line = (pos >> 2) | ((pos & 3) << 19);
-            LL_EXTI_SetEXTISource(extiport, line);
+#error "exti?"
 #endif
-            LL_EXTI_EnableIT_0_31(1 << pos);
-            LL_EXTI_EnableFallingTrig_0_31(1 << pos);
-            callbacks[pos] = callback;
-        }
-    }
 
-    if (!numcb) {
+    int pos = pin & 0xf;
+
+#ifdef STM32F0
+    uint32_t line = (pos >> 2) | ((pos & 3) << 18);
+    LL_SYSCFG_SetEXTISource(extiport, line);
+#else
+    uint32_t line = (pos >> 2) | ((pos & 3) << 19);
+    LL_EXTI_SetEXTISource(extiport, line);
+#endif
+    if (flags & EXTI_FALLING)
+        LL_EXTI_EnableFallingTrig_0_31(1 << pos);
+    if (flags & EXTI_RISING)
+        LL_EXTI_EnableRisingTrig_0_31(1 << pos);
+    LL_EXTI_EnableIT_0_31(1 << pos);
+
+    callbacks[pos] = callback;
+
+    if (!NVIC_GetEnableIRQ(EXTI0_1_IRQn)) {
         NVIC_SetPriority(EXTI0_1_IRQn, 0);
         NVIC_EnableIRQ(EXTI0_1_IRQn);
         NVIC_SetPriority(EXTI2_3_IRQn, 0);
