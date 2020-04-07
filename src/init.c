@@ -94,13 +94,6 @@ static void setup_clock() {
 #endif
 }
 
-#ifndef LOW_POWER
-void rtc_ensure_clock_setup() {
-    if (!(RCC->CR & RCC_CR_PLLON))
-        setup_clock();
-}
-#endif
-
 void SystemClock_Config(void) {
     setup_clock();
 

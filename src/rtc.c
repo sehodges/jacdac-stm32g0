@@ -44,8 +44,6 @@ void RTC_IRQHandler(void) {
             was_led_off_alrm = 1;
             // around 20us if pin access optimized
         } else {
-            rtc_ensure_clock_setup(); // 110us
-
             if (led_val) {
                 is_led_off_alrm = 1;
                 program_alrm(led_val);
