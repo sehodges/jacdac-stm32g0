@@ -22,7 +22,7 @@ struct light_state {
     uint8_t intensity;
     uint8_t lighttype;
     uint16_t numpixels;
-    uint32_t maxpower;
+    uint16_t maxpower;
     uint16_t duration;
     uint32_t color;
 };
@@ -32,12 +32,12 @@ REG_DEFINITION(                   //
     REG_U8(JD_REG_INTENSITY),     //
     REG_U8(LIGHT_REG_LIGHTTYPE),  //
     REG_U16(LIGHT_REG_NUMPIXELS), //
-    REG_U32(JD_REG_MAX_POWER),    //
+    REG_U16(JD_REG_MAX_POWER),    //
     REG_U16(LIGHT_REG_DURATION),  //
     REG_U32(LIGHT_REG_COLOR),     //
 )
 
-struct light_state state;
+static struct light_state state;
 static uint32_t *pxbuffer;
 static uint16_t pxbuffer_allocated;
 static uint32_t nextFrame;
