@@ -17,7 +17,7 @@
 typedef struct {
     uint16_t start_intensity;
     uint16_t duration; // in ms
-} step_t;
+} __attribute__((aligned(4))) step_t;
 
 struct pwm_light_state {
     uint16_t intensity;
@@ -36,8 +36,8 @@ REG_DEFINITION(                                           //
     pwm_light_regs,                                       //
     REG_U16(JD_REG_INTENSITY),                            //
     REG_U16(JD_REG_MAX_POWER),                            //
-    REG_U8(PWM_REG_CURR_ITERATION),                       //
-    REG_U8(PWM_REG_MAX_ITERATIONS),                       //
+    REG_U16(PWM_REG_CURR_ITERATION),                      //
+    REG_U16(PWM_REG_MAX_ITERATIONS),                      //
     REG_U8(PWM_REG_MAX_STEPS),                            //
     REG_U8(JD_REG_PADDING),                               // pwm_pin not accessible
     REG_BYTES(PWM_REG_STEPS, MAX_STEPS * sizeof(step_t)), //

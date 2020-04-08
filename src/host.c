@@ -1,5 +1,8 @@
 #include "jdsimple.h"
 
+//#define LOG DMESG
+#define LOG(...) ((void)0)
+
 bool should_sample(uint32_t *sample, uint32_t period) {
     if (in_future(*sample))
         return false;
@@ -64,14 +67,17 @@ int handle_reg(void *state, jd_packet_t *pkt, const uint16_t sdesc[]) {
     if (reg >= 0xf00) // these are reserved
         return 0;
 
-    if (is_set && (reg & 0xf) == 0x100)
+    if (is_set && (reg & 0xf00) == 0x100)
         return 0; // these are read-only
 
     uint32_t offset = 0;
     uint8_t bitoffset = 0;
 
+    LOG("handle %x", reg);
+
     for (int i = 0; sdesc[i] != JD_REG_END; ++i) {
-        int tp = sdesc[i] >> 4;
+        uint16_t sd = sdesc[i];
+        int tp = sd >> 12;
         int regsz = regSize[tp];
 
         if (tp == _REG_BYTES)
@@ -85,11 +91,13 @@ int handle_reg(void *state, jd_packet_t *pkt, const uint16_t sdesc[]) {
                 bitoffset = 0;
                 offset++;
             }
-            int align = regsz < 4 ? regsz : 4;
-            offset = (offset + align - 1) & ~align;
+            int align = regsz < 4 ? regsz - 1 : 3;
+            offset = (offset + align) & ~align;
         }
 
-        if ((sdesc[i] & 0xfff) == reg) {
+        LOG("%x:%d:%d",(sd & 0xfff),offset,regsz);
+
+        if ((sd & 0xfff) == reg) {
             uint8_t *sptr = (uint8_t *)state + offset;
             if (is_get) {
                 if (tp == _REG_BIT) {
@@ -101,13 +109,16 @@ int handle_reg(void *state, jd_packet_t *pkt, const uint16_t sdesc[]) {
                 return -reg;
             } else {
                 if (tp == _REG_BIT) {
+                    LOG("bit @%d - %x", offset, reg);
                     if (pkt->data[0])
                         *sptr |= 1 << bitoffset;
                     else
                         *sptr &= ~(1 << bitoffset);
                 } else if (regsz <= pkt->service_size) {
+                    LOG("exact @%d - %x", offset, reg);
                     memcpy(sptr, pkt->data, regsz);
                 } else {
+                    LOG("too little @%d - %x", offset, reg);
                     memcpy(sptr, pkt->data, pkt->service_size);
                     int fill = !REG_IS_SIGNED(tp)
                                    ? 0
