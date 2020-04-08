@@ -1,20 +1,27 @@
 #include "jdsimple.h"
 
 static sensor_state_t sensor;
-static int32_t sample;
-static uint8_t last_p0, inited;
+static int32_t sample, position;
+static uint8_t state, inited;
+static uint32_t nextSample;
 
-static void edge() {
-    pin_set(PIN_SERVO,1);
-    pin_set(PIN_SERVO,0);
-    int curr_p0 = pin_get(PIN_P0);
-    if (curr_p0 == last_p0)
-        return; // hmmm...
-    last_p0 = curr_p0;
-    if (pin_get(PIN_P1) == curr_p0) {
-        sample++;
-    } else {
-        sample--;
+void crank_init(uint8_t service_num) {
+    sensor.service_number = service_num;
+}
+
+const static int8_t posMap[] = {0, +1, -1, +2, -1, 0, -2, +1, +1, -2, 0, -1, +2, -1, +1, 0};
+static void update(void) {
+    // based on comments in https://github.com/PaulStoffregen/Encoder/blob/master/Encoder.h
+    uint16_t s = state & 3;
+    if (pin_get(PIN_P0))
+        s |= 4;
+    if (pin_get(PIN_P1))
+        s |= 8;
+
+    state = (s >> 2);
+    if (posMap[s]) {
+        position += posMap[s];
+        sample = position >> 2;
     }
 }
 
@@ -23,22 +30,25 @@ static void maybe_init() {
         inited = true;
         pin_setup_input(PIN_P0, 1);
         pin_setup_input(PIN_P1, 1);
-        last_p0 = pin_get(PIN_P0);
-        exti_set_callback(PIN_P0, edge, EXTI_FALLING | EXTI_RISING);
+        update();
     }
 }
 
-void crank_init(uint8_t service_num) {
-    sensor.service_number = service_num;
-}
-
 void crank_process() {
-    static int last;
-    if (sample != last)
-        DMESG("s:%d", sample);
-    last = sample;
-
     maybe_init();
+
+    if (should_sample(&nextSample, 997) && inited)
+        update();
+
+#if 0
+    static int last;
+    if (sample != last) {
+        DMESG("s:%d", sample);
+        pin_set(PIN_SERVO, 1);
+        pin_set(PIN_SERVO, 0);
+    }
+    last = sample;
+#endif
 
     if (sensor_should_stream(&sensor))
         txq_push(sensor.service_number, JD_CMD_GET_REG | JD_REG_READING, &sample, sizeof(sample));

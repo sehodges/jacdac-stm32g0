@@ -99,7 +99,7 @@ int main(void) {
     // uint64_t start_time = led_off_time + 3000000;
     uint64_t start_time = led_off_time;
 
-    //rtc_set_led_duty(200);
+    // rtc_set_led_duty(200);
 
     while (1) {
         uint64_t now_long = tim_get_micros();
@@ -116,9 +116,11 @@ int main(void) {
 
         app_process();
 
+#ifdef LOW_POWER
         if (!led_off_time && !start_time) {
             rtc_sleep();
         }
+#endif
     }
 }
 
