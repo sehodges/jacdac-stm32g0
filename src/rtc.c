@@ -1,5 +1,6 @@
 #include "jdsimple.h"
 
+#ifdef LOW_POWER
 static volatile uint64_t last_alrm;
 static volatile uint8_t is_led_off_alrm, was_led_off_alrm;
 static cb_t cb;
@@ -175,3 +176,4 @@ void rtc_sleep() {
             break;
     }
 }
+#endif
