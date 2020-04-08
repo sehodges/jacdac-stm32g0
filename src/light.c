@@ -200,7 +200,7 @@ static void anim_frame() {
 
 static void rainbow_step() {
     for (int i = 0; i < state.numpixels; ++i)
-        set(i, hsv(((i * 256) / (state.numpixels - 1) + anim_value) & 0xff, 0xff, 0xff));
+        set(i, hsv(((unsigned)(i * 256) / (state.numpixels - 1) + anim_value) & 0xff, 0xff, 0xff));
     anim_value += anim_step;
     if (anim_value >= 0xff) {
         anim_value = 0;
@@ -209,7 +209,7 @@ static void rainbow_step() {
 }
 static void anim_rainbow() {
     anim_value = 0;
-    anim_step = 128 / state.numpixels + 1;
+    anim_step = 128U / state.numpixels + 1;
     anim_start(rainbow_step, state.duration);
 }
 

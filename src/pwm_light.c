@@ -71,7 +71,7 @@ void pwm_light_process() {
         uint32_t pos = 0;
         step_t *st = &state.steps[0];
         for (int i = 0; i < MAX_STEPS; ++i) {
-            int d = st[i].duration;
+            unsigned d = st[i].duration;
             if (d == 0)
                 break;
             pos += d;
@@ -82,7 +82,7 @@ void pwm_light_process() {
                 if (d == 0 || i0 == i1)
                     step_intensity = i0;
                 else
-                    step_intensity = (i0 * into + i1 * (d - into)) / d;
+                    step_intensity = (unsigned)(i0 * into + i1 * (d - into)) / d;
                 break;
             }
         }
