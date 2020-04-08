@@ -5,22 +5,16 @@ const host_service_t *services[] = {
 #ifndef NO_ACC
     &host_accelerometer,
 #endif
-    &host_light,
-    &host_pwm_light,
-    &host_crank,
+    &host_light,         &host_pwm_light, &host_crank,
 };
 
 #define NUM_SERVICES (sizeof(services) / sizeof(services[0]))
 
 uint32_t now;
+static uint64_t maxId;
+static uint32_t lastMax, lastDisconnectBlink;
 
 void app_queue_annouce() {
-    static uint8_t ledcnt;
-    if (++ledcnt >= 1) {
-        led_blink(50);
-        ledcnt = 0;
-    }
-
     alloc_stack_check();
 
     uint32_t *dst =
@@ -64,11 +58,33 @@ void app_process() {
     }
 #endif
 
+    if (should_sample(&lastDisconnectBlink, 250000)) {
+        if (in_past(lastMax + 2000000)) {
+            led_blink(5000);
+        }
+    }
+
     for (int i = 0; i < NUM_SERVICES; ++i) {
         services[i]->process();
     }
 
     txq_flush();
+}
+
+static void handle_ctrl_tick(jd_packet_t *pkt) {
+    if (pkt->service_command == JD_CMD_ADVERTISEMENT_DATA) {
+        // if we have not seen maxId for 1.1s, find a new maxId
+        if (pkt->device_identifier < maxId && in_past(lastMax + 1100000)) {
+            maxId = pkt->device_identifier;
+        }
+
+        // maxId? blink!
+        if (pkt->device_identifier >= maxId) {
+            maxId = pkt->device_identifier;
+            lastMax = now;
+            led_blink(50);
+        }
+    }
 }
 
 static void handle_packet(jd_packet_t *pkt) {
@@ -87,8 +103,11 @@ static void handle_packet(jd_packet_t *pkt) {
     }
 #endif
 
-    if (!(pkt->flags & JD_FRAME_FLAG_COMMAND))
+    if (!(pkt->flags & JD_FRAME_FLAG_COMMAND)) {
+        if (pkt->service_number == 0)
+            handle_ctrl_tick(pkt);
         return;
+    }
 
     bool matched_devid = pkt->device_identifier == device_id();
 
