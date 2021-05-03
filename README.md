@@ -1,13 +1,12 @@
-# JACDAC for STM32F0/STM32G0
+# Jacdac for STM32F0/STM32G0
 
-You might have heard of [JACDAC](https://jacdac.org).
-It's a new protocol that aims to standardize connecting microcontrollers dynamically,
-and with very little wiring (one wire for data, one for GND, and optionally one for power).
-One scenario is networking of MCU-based devices, for example to enable multiplayer
-for your awesome [MakeCode Arcade](https://arcade.makecode.com) games.
-Another is connecting peripherals to a host device (joystick anyone?!).
+**[Jacdac](https://jacdac.org)** is a bus-based plug-and-play hardware and software stack for microcontrollers and their peripherals such as sensors and actuators. Jacdac is primarily designed for “modular electronics” scenarios that support rapid prototyping, creative exploration, making and learning through physical computing. Jacdac is designed to be cheap, flexible and extensible.
 
-What follows is a short operational specification for JACDAC v1.
+In addition to connecting peripherals to a host device, such as connecting a joystick to a [MakeCode Arcade gaming device](https://arcade.makecode.com/hardware), 
+Jacdac may also be used to connect MCU-based devices to each other. For example it supports multiplayer
+[MakeCode Arcade](https://arcade.makecode.com) games!
+
+What follows is a short operational specification for Jacdac v1.
 The main changes with respect to [JACDAC v0](https://jacdac.org/specification/) are:
 
 * there is only one baud-rate supported (1Mbit)
@@ -193,21 +192,18 @@ devices do not flood the bus, which results in much lower packet losses.
 
 ## Control layer
 
-Every JACDAC device has a unique 64 bit identifier.
-It may be generated from hardware unique ID (through hashing if needed;
-we recommend [FNV1A](https://tools.ietf.org/html/draft-eastlake-fnv-14#section-3)).
-Alternatively, it may be generated at first run using randomness and stored in flash or EPROM.
-
-Another option is to flash a randomly generated 64 bit number during production.
-If that is difficult, generate 48 bit (or so) random number, and assign identifiers
+Every Jacdac device requires a unique and un-changing 64 bit _device identifier_. This may be generated from a unique hardware ID, through hashing if needed (we recommend [FNV1A](https://tools.ietf.org/html/draft-eastlake-fnv-14#section-3)). 
+If this is not possible, another option is to flash a randomly generated 64 bit number during production. 
+If that is difficult, generate a 48 bit (or so) random number, and assign identifiers
 starting with that number with lowest bits incrementing.
-Make sure to machine-generate the number, do not just bang on the keyboard.
+Make sure to machine-generate the randon number, **do not** just type in something 'randomly' on the keyboard.
 You can use the line at the bottom of [CF2 patcher](https://microsoft.github.io/uf2/patcher/)
 to generate random numbers.
 
-It's theoretically possible for a device ID collision to occur in a small network of say 200 devices.
-With evenly distributed (ie., random) device IDs and 1 trillion such networks 
-the probability of collision in any of them is 0.1%.
+Alternatively, the unique device identifier may be generated at first run of device firmware using genuine randomness and then stored in flash or EEPROM to ensure the same identifier is always used.
+
+It's theoretically possible for a device ID collision to occur. However, across 1 trillion small networks of 200 devices each, when
+device IDs are evenly distributed (i.e. truly random) the probability of collision in any of them is just 0.1%.
 OTOH, were we to use 32 bit IDs, with 2000 networks the collision probability in any of them
 is already 1%, and with 200k networks it's more 60%.
 
